@@ -1,0 +1,23 @@
+spigot:
+  container_name: cryptoplugin
+  build: .
+  ports:
+    - "25565:25565"
+  env_file:
+    - variables.env
+  environment:
+    - ADMIN_UUID=bceeaefc-9590-4233-a858-d3eb933121ec
+    - ADDRESS_URL=https://blockchair.com/dogecoin/address/
+    - TX_URL=https://blockchair.com/dogecoin/transaction/
+    - NODE_HOST=192.168.x.x
+    - NODE_PORT=22555
+    - NODE_USERNAME=ABC123
+    - NODE_PASSWORD=ABC123
+    - COINGECKO_CRYPTO=dogecoin
+    - CRYPTO_TICKER=DOGE
+    - DISPLAY_DECIMALS=4
+    - DENOMINATION_NAME=Shibe
+  links:
+    - redis
+redis:
+  image: redis

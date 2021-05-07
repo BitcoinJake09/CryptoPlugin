@@ -1,0 +1,70 @@
+api-version: 1.16
+name: CryptoPlugin
+version: 1.0
+author: The CryptoPlugin Dev Team
+main: com.cryptoplugin.cryptoplugin.CryptoPlugin
+description: The CryptoPlugin Open Source Project
+commands:
+  ban:
+    description: "Adds player to the ban list"
+    usage: "/ban <player>"
+  banlist:
+    description: "Prints the list of banned players"
+    usage: "/banlist"
+  home:
+    description: "teleports you to your last bed"
+    usage: "/home"
+  maintenance:
+    description: "Enables maintenance mode and stops players from joining the server"
+    usage: "/maintenance <seconds>"
+  mod:
+    description: "Utility to add/remove/list moderators"
+    usage: "/mod <add|remove|list>"
+  setfee:
+    description: "Used for players to set their own Sat/Byte between 1.2 - 15 sats/byte."
+    usage: "/setfee <1.2 - 15>"
+  setlives:
+    description: "Utility to set/correct lives used by mods only"
+    usage: "/setlives set <playername> <amount>"
+  motd:
+    description: "Change the message of the day"
+    usage: "/motd <message>"
+  spectate:
+    description: "Allows moderators to spectate players' actions"
+    usage: "/spectate <player>"
+  unban:
+    description: "Removes player from the ban list"
+    usage: "/unban <player>"
+  emergencystop:
+    description: "Stops the server cleanly in case of emergency"
+    usage: "/emergencystop [reason]"
+  wallet:
+    description: "Displays your CryptoPlugin wallet info"
+    usage: "/wallet"
+  tip:
+    description: "Tip is used for player to player transactions"
+    usage: "/tip <amount> <playername>"
+  withdraw:
+    description: "withdraw is used for External transactions to an address"
+    usage: "/withdraw <amount> <address>"
+  reset:
+    description: "used to reset world variable like loot spawn and announce radius"
+    usage: "/reset"
+  lives:
+    description: "Get lives prices and buy or transfer lives to other players"
+    usage: "/lives <help|orLives#> <buy>"
+  vote:
+    description: "shows where to vote for 10% off lives"
+    usage: "/vote"
+  leaderboard:
+    description: "Lists all round winners"
+    usage: "/leaderboard"
+  fixleaderboard:
+    description: "used by admin during testing to correct mistakes"
+    usage: "/fixleaderboard <args>"
+  crashtest:
+    description: "Crashes the plugin on purpose, hell breaks loose. Don't try this at home"
+    usage: "/crashtest"
+  report:
+    description: "Sends a report message to the moderators"
+    usage: "/report <player> <reason>"
