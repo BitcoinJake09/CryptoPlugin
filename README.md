@@ -75,3 +75,5 @@ How to run without docker
 6. Make sure you have Bitcoin and Redis server running.
 7. Edit server.properties to point to your local IP
 8. Start server with ```java -jar latest.jar```
+
+(https://media.discordapp.net/attachments/803851819750129685/840074868111179786/unknown.png?width=802&height=451)
