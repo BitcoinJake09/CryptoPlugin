@@ -1,3 +1,6 @@
+This plugin is for player crypto wallet functionality, the end goal is to have a easily configurable plugin to allow players to recieve, withdraw, and tip ingame.
+this is a 100% free to use plugin and has no additional fees added to it. use at your own risk.
+
 How to run (for testing and development)
 =========================================
 
@@ -12,38 +15,29 @@ open and Change the "CHANGEME"s accordingly
 An example configuration would be:
 
 ```
-    - BITCOIN_PORT_8332_TCP_PORT=8332
-    - ADMIN_ADDRESS=x
-    - ADMIN_UUID=x
-    - BITCOIN_ENV_USERNAME=x
-    - BITCOIN_ENV_PASSWORD=x
-    - BITCOIN_NODE_HOST=192.168.0.11
-    - BUYIN_AMOUNT=1.00
-    - LIVES_PERBUYIN=1
-    - SPAWN_PROTECT_RADIUS=25
-    - LOOT_RADIUS_MIN=500
-    - LOOT_RADIUS_MAX=500
-    - LOOT_ANNOUNCE_RADIUS=100
-    - ADDRESS_URL=https://www.blockchain.com/btc/address/
-    - TX_URL=https://www.blockchain.com/btc/tx/
-    - SERVER_WEBSITE=http://AllAboutBTC.com/CryptoPlugin.html
-    - COINGECKO_CRYPTO=bitcoin
-    - DENOMINATION_NAME=Sats
-    - SERVER_NAME=CryptoPlugin
-    - CRYPTO_DECIMALS=8
-    - DISPLAY_DECIMALS=6
-    - USD_DECIMALS=0.000
-    - CONFS_TARGET=1
-    - VOTE_URL
-    - MIN_FEE=1.2
-    - MAX_FEE=15
-    - CRYPTO_TICKER=BTC
-    - VOTE_API_KEY
-    - DISCORD_URL
-    - DISCORD_HOOK_CHANNEL_ID
-    - DISCORD_HOOK_URL
-    - ADMIN_ADDRESS
-    - ADMIN2_ADDRESS
+spigot:
+  container_name: cryptoplugin
+  build: .
+  ports:
+    - "25565:25565"
+  env_file:
+    - variables.env
+  environment:
+    - ADMIN_UUID=bceeaefc-9590-4233-a858-d3eb933121ec
+    - ADDRESS_URL=https://blockchair.com/dogecoin/address/
+    - TX_URL=https://blockchair.com/dogecoin/transaction/
+    - NODE_HOST=192.168.x.x
+    - NODE_PORT=22555
+    - NODE_USERNAME=ABC123
+    - NODE_PASSWORD=ABC123
+    - COINGECKO_CRYPTO=dogecoin
+    - CRYPTO_TICKER=DOGE
+    - DISPLAY_DECIMALS=4
+    - DENOMINATION_NAME=Shibe
+  links:
+    - redis
+redis:
+  image: redis
 ```
 
 3. run docker-compose up
@@ -72,25 +66,12 @@ Configuring your Spigot servers for BungeeCordPermalink
 How to run without docker
 
 =========================================
-1. Download [Spigot 1.16.1](https://getbukkit.org/get/fDoqnvFqdhjFcURmY7Oqtzu0giKFAiyY)
-2. Start server with ```java -jar Spigot-1.16.1.jar```
+1. Download latest spigot jar
+2. Start server with ```java -jar latest.jar```
     Restart the Spigot servers.
 3. Copy CryptoPlugin.jar to plugin folder
 4. Set EULA.txt to true
 5. Edit and run setenv.sh script
 6. Make sure you have Bitcoin and Redis server running.
 7. Edit server.properties to point to your local IP
-8. Start server with ```java -jar Spigot-1.16.1.jar```
-
-
-InGame mod/admin commands:
-
-/mod list -list of mods
-
-/mod flag -locks spawn even when players have lives i think?
-
-/mod beta -gives new players 1 free life and shows beta on rounds
-
-/mod expandingloot -will allow loot to expand further after each round won
-
-/mod add playername -mods a player
+8. Start server with ```java -jar latest.jar```
