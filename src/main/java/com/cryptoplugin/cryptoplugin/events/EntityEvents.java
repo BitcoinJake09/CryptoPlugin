@@ -27,8 +27,6 @@ public class EntityEvents implements Listener {
   CryptoPlugin cryptoPlugin;
   private NodeWallet nodeWallet = null;
   StringBuilder rawwelcome = new StringBuilder();
-  String PROBLEM_MESSAGE = "Can't join right now. Come back later";
-  boolean isNewPlayer = false;
 
   public EntityEvents(CryptoPlugin plugin) {
     cryptoPlugin = plugin;
@@ -61,7 +59,13 @@ public class EntityEvents implements Listener {
   public void onPlayerJoin(PlayerJoinEvent event) throws ParseException{
     final Player player = event.getPlayer();
     try {
-      nodeWallet = new NodeWallet(player.getUniqueId().toString());
+     	for (int x = 0; x < cryptoPlugin.NODES.size(); x++) {
+      nodeWallet = new NodeWallet(player.getUniqueId().toString(), x);
+      player.sendMessage(ChatColor.YELLOW + "This server runs CryptoPlugin! ");
+      player.sendMessage(ChatColor.RED + "USE AT YOUR OWN RISK!");
+      player.sendMessage(ChatColor.GREEN + "Your " + cryptoPlugin.NODES.get(nodeWallet.walletArray).CRYPTO_TICKER + " address is: " + cryptoPlugin.NODES.get(nodeWallet.walletArray).ADDRESS_URL + nodeWallet.address);
+      System.out.println("Address for: " + player.getName() + " : " + nodeWallet.address);
+      }
     } catch (Exception e) {
       e.printStackTrace();
       player.sendMessage(ChatColor.RED + "couldnt load wallet.");
@@ -72,10 +76,11 @@ public class EntityEvents implements Listener {
 
     final String ip = player.getAddress().toString().split("/")[1].split(":")[0];
     System.out.println("User " + player.getName() + "logged in with IP " + ip);
-    CryptoPlugin.REDIS.set("ip" + player.getUniqueId().toString(), ip);
-    CryptoPlugin.REDIS.set("displayname:" + player.getUniqueId().toString(), player.getDisplayName());
-    CryptoPlugin.REDIS.set("uuid:" + player.getName().toString(), player.getUniqueId().toString());
-    
+    System.out.println("displayname:" + player.getDisplayName());
+    System.out.println("uuid:" + player.getUniqueId().toString());
+    cryptoPlugin.whichWallet.put(player.getUniqueId(), 0);
+    int tempWhichWallet = (Integer) cryptoPlugin.whichWallet.get(player.getUniqueId());
+    System.out.println("wallet #" + tempWhichWallet +" enabled");
 
 /*
 	try {
@@ -112,9 +117,9 @@ public class EntityEvents implements Listener {
 
     // Prints the user balance
 
-    player.sendMessage(ChatColor.YELLOW + "This server runs CryptoPlugin! ");
+
     
-    CryptoPlugin.REDIS.zincrby("player:login", 1, player.getUniqueId().toString());
+    //CryptoPlugin.REDIS.zincrby("player:login", 1, player.getUniqueId().toString());
 
 
   }
