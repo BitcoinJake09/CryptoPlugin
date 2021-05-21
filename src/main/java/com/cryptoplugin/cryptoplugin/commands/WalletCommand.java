@@ -20,7 +20,7 @@ public class WalletCommand extends CommandAction {
   public boolean run(
       CommandSender sender, Command cmd, String label, String[] args, Player player) {
     try {
-      nodeWallet = new NodeWallet(player.getUniqueId().toString());
+      nodeWallet = new NodeWallet(player.getUniqueId().toString(), 0);
       String address = nodeWallet.address;
       System.out.print(player.getUniqueId().toString() + " [ADDRESS]: " + address);
       player.sendMessage(ChatColor.GREEN + "/wallet - Displays your wallet info.");
@@ -32,30 +32,28 @@ public class WalletCommand extends CommandAction {
               + "/withdraw <amount> <address> - withdraw is used for External transactions to an address.");
 
       player.sendMessage(ChatColor.GREEN + "Your Deposit address on this server: " + address);
-      String url = cryptoPlugin.ADDRESS_URL + address;
+      String url = cryptoPlugin.NODES.get(0).ADDRESS_URL + address;
       player.sendMessage(ChatColor.WHITE + "" + ChatColor.UNDERLINE + url);
 
-      Double playerCoinBalance6 =
+      Double playerCoinBalance =
           (Double)
-              (BigDecimal.valueOf(nodeWallet.getBalance(cryptoPlugin.CONFS_TARGET)).doubleValue()
+              (BigDecimal.valueOf(nodeWallet.getBalance()).doubleValue()
                   * cryptoPlugin.baseSat);
 
       player.sendMessage(
           ChatColor.GREEN
-              + "wallet balance with "
-              + cryptoPlugin.CONFS_TARGET
-              + "-conf+: "
-              + cryptoPlugin.globalDecimalFormat.format(playerCoinBalance6));
+              + "wallet balance of "
+              + cryptoPlugin.globalDecimalFormat.format(playerCoinBalance));
 
-      DecimalFormat df = new DecimalFormat(CryptoPlugin.USD_DECIMALS);
+      DecimalFormat df = new DecimalFormat(CryptoPlugin.NODES.get(0).USD_DECIMALS);
 
       player.sendMessage(
           ChatColor.GREEN
               + "1 "
-              + cryptoPlugin.COINGECKO_CRYPTO
+              + cryptoPlugin.NODES.get(0).COINGECKO_CRYPTO
               + " = $"
               + df.format(
-                  Double.parseDouble(cryptoPlugin.getExchangeRate(cryptoPlugin.COINGECKO_CRYPTO))));
+                  Double.parseDouble(cryptoPlugin.getExchangeRate(cryptoPlugin.NODES.get(0).COINGECKO_CRYPTO))));
 
     } catch (Exception e) {
       e.printStackTrace();
