@@ -17,84 +17,31 @@ import org.bukkit.entity.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.*;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import redis.clients.jedis.Jedis;
-
-// Color Table :
-// GREEN : Worked, YELLOW : Processing, LIGHT_PURPLE : Any money balance, BLUE : Player name,
-// DARK_BLUE UNDERLINE : Link, RED : Server error, DARK_RED : User error, GRAY : Info, DARK_GRAY :
-// Clan, DARK_GREEN : Landname
+import org.json.simple.parser.ParseException;
 
 public class CryptoPlugin extends JavaPlugin {
   private NodeWallet nodeWallet = null;
-  // TODO: remove env variables not being used anymore
-  // Connecting to REDIS
-  // Links to the administration account via Environment Variables
+  public static final List<Node> NODES = new ArrayList<>();
+  public static final HashMap<UUID, Integer> whichWallet = new HashMap<UUID, Integer>();
+
+  boolean useJSONnodes = false;
+  boolean loadENVnode = true;
+  public boolean eventsLoaded = false;
+  public boolean maintenance_mode = false;
+  
   public static final String CRYPTOPLUGIN_ENV =
       System.getenv("CRYPTOPLUGIN_ENV") != null ? System.getenv("CRYPTOPLUGIN_ENV") : "development";
-  public static final UUID ADMIN_UUID =
+  public static UUID ADMIN_UUID =
       System.getenv("ADMIN_UUID") != null ? UUID.fromString(System.getenv("ADMIN_UUID")) : null;
-  public static final String NODE_HOST =
-      System.getenv("NODE_HOST") != null ? System.getenv("NODE_HOST") : null;
-  public static final int NODE_PORT =
-      System.getenv("NODE_PORT") != null ? Integer.parseInt(System.getenv("NODE_PORT")) : 8332;
-  // https://www.cryptonator.com/api/currencies
-  public static final String COINGECKO_CRYPTO =
-      System.getenv("COINGECKO_CRYPTO") != null ? System.getenv("COINGECKO_CRYPTO") : "bitcoin";
-  public static final String CRYPTO_TICKER =
-      System.getenv("CRYPTO_TICKER") != null ? System.getenv("CRYPTO_TICKER") : "BTC";
-  public static final Long DENOMINATION_FACTOR =
-      System.getenv("DENOMINATION_FACTOR") != null
-          ? Long.parseLong(System.getenv("DENOMINATION_FACTOR"))
-          : 1L;
-  public static final Integer CRYPTO_DECIMALS =
-      System.getenv("CRYPTO_DECIMALS") != null
-          ? Integer.parseInt(System.getenv("CRYPTO_DECIMALS"))
-          : 8;
-  public static final Integer DISPLAY_DECIMALS =
-      System.getenv("DISPLAY_DECIMALS") != null
-          ? Integer.parseInt(System.getenv("DISPLAY_DECIMALS"))
-          : 8;
-  public static final String USD_DECIMALS =
-      System.getenv("USD_DECIMALS") != null ? System.getenv("USD_DECIMALS") : "0.00";
-  public static final Integer CONFS_TARGET =
-      System.getenv("CONFS_TARGET") != null ? Integer.parseInt(System.getenv("CONFS_TARGET")) : 6;
-  public static final String DENOMINATION_NAME =
-      System.getenv("DENOMINATION_NAME") != null ? System.getenv("DENOMINATION_NAME") : "Sats";
-  public static final String NODE_USERNAME = System.getenv("NODE_USERNAME");
-  public static final String NODE_PASSWORD = System.getenv("NODE_PASSWORD");
-  public static final Double MIN_FEE =
-      System.getenv("MIN_FEE") != null ? Double.parseDouble(System.getenv("MIN_FEE")) : 1.2;
-  public static final Double MAX_FEE =
-      System.getenv("MAX_FEE") != null ? Double.parseDouble(System.getenv("MAX_FEE")) : 100.0;
+  
+  public static final String PLUGIN_WEBSITE = "https://github.com/BitcoinJake09/CryptoPlugin";
 
-  public static final String ADDRESS_URL =
-      System.getenv("ADDRESS_URL") != null
-          ? System.getenv("ADDRESS_URL")
-          : "https://www.blockchain.com/btc/address/";
-
-  public static final String TX_URL =
-      System.getenv("TX_URL") != null
-          ? System.getenv("TX_URL")
-          : "https://www.blockchain.com/btc/tx/";
-
-  public static final String PLUGIN_WEBSITE =
-      System.getenv("SERVER_WEBSITE") != null
-          ? System.getenv("SERVER_WEBSITE")
-          : "http://AllAboutBTC.com/CryptoPlugin.html";
-
-  // REDIS: Look for Environment variables on hostname and port, otherwise defaults to
-  // localhost:6379
-  public static final String REDIS_HOST =
-      System.getenv("REDIS_PORT_6379_TCP_ADDR") != null
-          ? System.getenv("REDIS_PORT_6379_TCP_ADDR")
-          : "localhost";
-  public static final Integer REDIS_PORT =
-      System.getenv("REDIS_PORT_6379_TCP_PORT") != null
-          ? Integer.parseInt(System.getenv("REDIS_PORT_6379_TCP_PORT"))
-          : 6379;
-  public static final Jedis REDIS = new Jedis(REDIS_HOST, REDIS_PORT);
 
   public static int rand(int min, int max) {
     return min + (int) (Math.random() * ((max - min) + 1));
@@ -102,20 +49,16 @@ public class CryptoPlugin extends JavaPlugin {
 
   public Long wallet_balance_cache = 0L;
   public Double exRate = 99999999.99;
-  public boolean eventsLoaded = false;
-  public DecimalFormat globalDecimalFormat = new DecimalFormat("0.00000000");
-  public DecimalFormat displayDecimalFormat = new DecimalFormat("0.00000000");
-  public Double baseSat = oneSat();
-  public Double displaySats = howmanyDisplayDecimals();
-  public Long oneCoinSats = wholeCoin();
-  // public Long tests = convertCoinToSats(0.00125555); //test   F tempAmount : 125554.99999999997
-  // when true, server is closed for maintenance and not allowing players to join in.
-  public boolean maintenance_mode = false;
+  public static DecimalFormat globalDecimalFormat = new DecimalFormat("0.00000000");
+  public static DecimalFormat displayDecimalFormat = new DecimalFormat("0.00000000");
+  public static Double baseSat ;//= oneSat();
+  public Double displaySats ;//= howmanyDisplayDecimals();
+  public Long oneCoinSats ;//= wholeCoin();
+
   private Map<String, CommandAction> commands;
   private Map<String, CommandAction> modCommands;
   private Player[] moderators;
 
-  @Override
   public void onEnable() {
     log("[startup] CryptoPlugin starting");
     try {
@@ -139,18 +82,24 @@ public class CryptoPlugin extends JavaPlugin {
         saveDefaultConfig();
         System.out.println("[startup] config file does not exist. creating default.");
       }
-
-      if (NODE_HOST != null) {
-        System.out.println("[startup] checking " + CRYPTO_TICKER + " node connection");
-        nodeWallet = new NodeWallet("CryptoPlugin");
+  	useJSONnodes = loadJSONnodes();
+  	loadENVnode = loadENVnode();
+      if (NODES.get(0).NODE_HOST != null) {
+      	for (int x = 0; x < NODES.size(); x++) {
+        System.out.println("[startup] checking " + NODES.get(x).CRYPTO_TICKER + " node connection");
+        baseSat = oneSat();
+	displaySats = howmanyDisplayDecimals();
+	oneCoinSats = wholeCoin();
+          System.out.println("baseSat: "+ globalDecimalFormat.format(baseSat));
+        nodeWallet = new NodeWallet("CryptoPlugin", x);
         nodeWallet.getBlockChainInfo();
+        }
       }
 
       // creates scheduled timers (update balances, etc)
       createScheduledTimers();
       commands = new HashMap<String, CommandAction>();
       commands.put("wallet", new WalletCommand(this));
-      commands.put("SetFee", new SetFeeCommand(this));
       commands.put("tip", new TipCommand(this));
       commands.put("withdraw", new WithdrawCommand(this));
       modCommands = new HashMap<String, CommandAction>();
@@ -164,6 +113,130 @@ public class CryptoPlugin extends JavaPlugin {
       System.out.println("[fatal] plugin enable fails");
       Bukkit.shutdown();
     }
+  }
+
+  public boolean loadJSONnodes() {
+  JSONParser jsonParser = new JSONParser();
+  System.out.println("[CryptoPlugin] attempting to load node json files.");
+          try {
+		File nodeDir = new File(System.getProperty("user.dir") + "/plugins/CryptoPlugin/nodes/");
+		if(nodeDir.isDirectory() && nodeDir.list().length == 0) {
+			          return false; //Directory is empty 
+		} else {
+
+File[] nodeList = nodeDir.listFiles();
+
+for (int i = 0; i < nodeList.length; i++) {
+  if (nodeList[i].isFile()) {
+    System.out.println("File " + nodeList[i].getName());
+  } else if (nodeList[i].isDirectory()) {
+    System.out.println("Directory " + nodeList[i].getName());
+  }
+}
+        for (int n = 0; n < nodeList.length; n++) {
+  
+
+          FileReader reader = new FileReader(nodeList[n]);
+            //Read JSON file
+            Object obj = jsonParser.parse(reader);
+ 
+            JSONArray nodeData = (JSONArray) obj;
+            System.out.println(nodeData);
+            final String tempName = nodeList[n].getName().substring(0, nodeList[n].getName().lastIndexOf('.'));
+            final int whichNode = n;
+            nodeData.forEach( fnodes -> parseJSONnodes( (JSONObject) fnodes, tempName, whichNode ) );
+            }
+            }
+            return true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+           System.out.println("[CryptoPlugin] no node json files found, will default to ENV variables.");
+          return false;
+        } catch (IOException e) {
+	   System.out.println("[CryptoPlugin] error reading json files, will default to ENV variables.");
+            e.printStackTrace();
+		return false;
+        } catch (ParseException e) {
+        System.out.println("[CryptoPlugin] error parsing json files, will default to ENV variables.");
+            e.printStackTrace();
+		return false;
+        }
+  }
+  private static void parseJSONnodes(JSONObject fnodes, String fileName, int nodeCount) {
+  	NODES.add(new Node());
+  	//NODES.set(0, new Node());
+	JSONObject fnodesObj = (JSONObject) fnodes.get(fileName);
+          String tempNode_host = (String) fnodesObj.get("NODE_HOST");    
+	Integer tempNode_port = Integer.parseInt((String) fnodesObj.get("NODE_PORT"));  
+	String tempNode_username = (String) fnodesObj.get("NODE_USERNAME");  
+	String tempNode_password = (String) fnodesObj.get("NODE_PASSWORD");  
+        NODES.get(nodeCount).setNode(tempNode_host, tempNode_port, tempNode_username, tempNode_password);
+        
+
+	String tempCoingecko_crypto = (String) fnodesObj.get("COINGECKO_CRYPTO");    
+	String tempCrypto_ticker = (String) fnodesObj.get("CRYPTO_TICKER");  
+	String tempUSD_decimals = (String) fnodesObj.get("USD_DECIMALS");  
+	String tempDenomination_name = (String) fnodesObj.get("DENOMINATION_NAME");  
+	String tempAddress_url = (String) fnodesObj.get("ADDRESS_URL");    
+	String tempTX_url = (String) fnodesObj.get("TX_URL");  
+	Integer tempCrypto_decimals = Integer.parseInt((String) fnodesObj.get("CRYPTO_DECIMALS"));
+	Integer tempDisplay_decimals = Integer.parseInt((String) fnodesObj.get("DISPLAY_DECIMALS"));  
+	Integer tempConfs_taget = Integer.parseInt((String) fnodesObj.get("CONFS_TARGET"));  
+	long tempDenomination_factor = Long.valueOf((String) fnodesObj.get("DENOMINATION_FACTOR"));  
+        NODES.get(nodeCount).config(tempCoingecko_crypto, tempCrypto_ticker, tempUSD_decimals, tempDenomination_name, tempAddress_url, tempTX_url, tempCrypto_decimals, tempDisplay_decimals, tempConfs_taget, tempDenomination_factor);
+  
+  }
+  public boolean loadENVnode() {
+    if (!useJSONnodes) {
+     	NODES.add(new Node());
+  ADMIN_UUID =
+      System.getenv("ADMIN_UUID") != null ? UUID.fromString(System.getenv("ADMIN_UUID")) : null;
+  String tempNode_host =
+      System.getenv("NODE_HOST") != null ? System.getenv("NODE_HOST") : null;
+  Integer tempNode_port =
+      System.getenv("NODE_PORT") != null ? Integer.parseInt(System.getenv("NODE_PORT")) : 8332;
+  String tempNode_username = System.getenv("NODE_USERNAME");
+  String tempNode_password = System.getenv("NODE_PASSWORD");
+
+        NODES.get(0).setNode(tempNode_host, tempNode_port, tempNode_username, tempNode_password);
+
+  String tempCoingecko_crypto =
+      System.getenv("COINGECKO_CRYPTO") != null ? System.getenv("COINGECKO_CRYPTO") : "bitcoin";
+  String tempCrypto_ticker =
+      System.getenv("CRYPTO_TICKER") != null ? System.getenv("CRYPTO_TICKER") : "BTC";
+  Long tempDenomination_factor =
+      System.getenv("DENOMINATION_FACTOR") != null
+          ? Long.parseLong(System.getenv("DENOMINATION_FACTOR"))
+          : 1L;
+  Integer tempCrypto_decimals =
+      System.getenv("CRYPTO_DECIMALS") != null
+          ? Integer.parseInt(System.getenv("CRYPTO_DECIMALS"))
+          : 8;
+  Integer tempDisplay_decimals =
+      System.getenv("DISPLAY_DECIMALS") != null
+          ? Integer.parseInt(System.getenv("DISPLAY_DECIMALS"))
+          : 8;
+  String tempUSD_decimals =
+      System.getenv("USD_DECIMALS") != null ? System.getenv("USD_DECIMALS") : "0.00";
+  Integer tempConfs_taget =
+      System.getenv("CONFS_TARGET") != null ? Integer.parseInt(System.getenv("CONFS_TARGET")) : 6;
+  String tempDenomination_name =
+      System.getenv("DENOMINATION_NAME") != null ? System.getenv("DENOMINATION_NAME") : "Sats";
+
+  String tempAddress_url =
+      System.getenv("ADDRESS_URL") != null
+          ? System.getenv("ADDRESS_URL")
+          : "https://www.blockchain.com/btc/address/";
+  String tempTX_url =
+      System.getenv("TX_URL") != null
+          ? System.getenv("TX_URL")
+          : "https://www.blockchain.com/btc/tx/";
+          
+          NODES.get(0).config(tempCoingecko_crypto, tempCrypto_ticker, tempUSD_decimals, tempDenomination_name, tempAddress_url, tempTX_url, tempCrypto_decimals, tempDisplay_decimals, tempConfs_taget, tempDenomination_factor);
+          
+          return true;
+    }
+              return false;
   }
 
   public static void announce(final String message) {
@@ -186,7 +259,7 @@ public class CryptoPlugin extends JavaPlugin {
 
   public void publish_stats() {
     try {
-      nodeWallet = new NodeWallet("CryptoPlugin");
+      nodeWallet = new NodeWallet("CryptoPlugin", 0);
       nodeWallet.getBlockChainInfo();
       // Long balance = getBalance(SERVERDISPLAY_NAME,1); //error here
       // REDIS.set("loot:pool", Long.toString(balance));
@@ -349,7 +422,7 @@ public class CryptoPlugin extends JavaPlugin {
   public Long convertCoinToSats(Double wholeCoinAmount) {
     Double tempAmount = wholeCoinAmount;
     Long oneCoin = 1L;
-    for (int x = 1; x <= CRYPTO_DECIMALS; x++) {
+    for (int x = 1; x <= NODES.get(0).CRYPTO_DECIMALS; x++) {
       // System.out.println(oneCoin);
       // tempAmount=tempAmount*10;
       oneCoin = oneCoin * 10L;
@@ -362,7 +435,7 @@ public class CryptoPlugin extends JavaPlugin {
   public Double convertSatsToCoin(Long satsIn) {
     Long tempAmount = satsIn;
     Double oneCoin = 1.0;
-    for (int x = 1; x <= CRYPTO_DECIMALS; x++) {
+    for (int x = 1; x <= NODES.get(0).CRYPTO_DECIMALS; x++) {
       // System.out.println(oneCoin);
       // tempAmount=tempAmount*10;
       oneCoin = oneCoin * 0.1;
@@ -374,41 +447,41 @@ public class CryptoPlugin extends JavaPlugin {
 
   public Long wholeCoin() {
     Long oneCoin = 1L;
-    for (int x = 1; x <= CRYPTO_DECIMALS; x++) {
+    for (int x = 1; x <= NODES.get(0).CRYPTO_DECIMALS; x++) {
       // System.out.println(oneCoin);
       oneCoin = oneCoin * 10L;
     }
-    System.out.println("total " + DENOMINATION_NAME + " in 1 coin: " + oneCoin);
+    System.out.println("total " + NODES.get(0).DENOMINATION_NAME + " in 1 coin: " + oneCoin);
     return oneCoin;
   }
 
-  public Double oneSat() {
+  public static Double oneSat() {
     String DCF = "0.";
-    for (int y = 1; y <= CRYPTO_DECIMALS; y++) {
+    for (int y = 1; y <= NODES.get(0).CRYPTO_DECIMALS; y++) {
       DCF = DCF + "0";
     }
     System.out.println(DCF);
     DecimalFormat numberFormat = new DecimalFormat(DCF);
     globalDecimalFormat = numberFormat;
     Double oneSats = 1.0;
-    for (int x = 1; x <= CRYPTO_DECIMALS; x++) {
-      // System.out.println(numberFormat.format(oneSats));
+    for (int x = 1; x <= NODES.get(0).CRYPTO_DECIMALS; x++) {
+      System.out.println(numberFormat.format(oneSats));
       oneSats = oneSats * 0.1;
     }
     System.out.println("Lowest Crypto Decimal set: " + globalDecimalFormat.format(oneSats));
-    return oneSats;
+    return Double.parseDouble(globalDecimalFormat.format(oneSats));
   }
 
   public Double howmanyDisplayDecimals() {
     String DCF = "0.";
-    for (int y = 1; y <= DISPLAY_DECIMALS; y++) {
+    for (int y = 1; y <= NODES.get(0).DISPLAY_DECIMALS; y++) {
       DCF = DCF + "0";
     }
     System.out.println(DCF);
     DecimalFormat numberFormat = new DecimalFormat(DCF);
     displayDecimalFormat = numberFormat;
     Double oneSats = 1.0;
-    for (int x = 1; x <= DISPLAY_DECIMALS; x++) {
+    for (int x = 1; x <= NODES.get(0).DISPLAY_DECIMALS; x++) {
       // System.out.println(numberFormat.format(oneSats));
       oneSats = oneSats * 0.1;
     }
