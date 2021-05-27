@@ -7,11 +7,12 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import java.util.*;
 
 public class TipCommand extends CommandAction {
   private CryptoPlugin cryptoPlugin;
   private NodeWallet nodeWallet  = null;
-  private NodeWallet nodeWallet2 = null; 
+  List<Player> sentTo = new ArrayList<>(); 
 
   public TipCommand(CryptoPlugin plugin) {
     cryptoPlugin = plugin;
@@ -20,7 +21,8 @@ public class TipCommand extends CommandAction {
   public boolean run(
       CommandSender sender, Command cmd, String label, String[] args, final Player player) {
     try {
-      nodeWallet = new NodeWallet(player.getUniqueId().toString(), 0);
+          int tempWhichWallet = cryptoPlugin.whichWallet.get(player.getUniqueId());
+      nodeWallet = new NodeWallet(player.getUniqueId().toString(), tempWhichWallet);
       if (args[0].equalsIgnoreCase("help") || !(args.length >= 1)) {
         player.sendMessage(
             ChatColor.GREEN
@@ -32,25 +34,17 @@ public class TipCommand extends CommandAction {
           ChatColor.GREEN
               + "/tip <playername> <amount> - Tip is used for player to player transactions.");
     }
+   if (args.length >= 2) {
+        System.out.println("args.length: "+args.length);
+        try {
+          Long balance = Double.valueOf(nodeWallet.getGetSpendable()).longValue();
+            Long sat = 0L;
+            Long totals = 0L;
 
-    // int MAX_SEND = 10000; // to be multiplied by DENOMINATION_FACTOR
-    if (args.length > 1) {
-      Long sat = cryptoPlugin.convertCoinToSats(Double.parseDouble(args[1]));
-      Long totals = 0L;
-      for (char c : sat.toString().toCharArray()) {
-        if (!Character.isDigit(c)) return false;
-      }
-
-
-      if (sat != 0) {
-
-
-              try {
-                Long balance = nodeWallet.getBalance();
-
-		String[] tempAddy = new String[(args.length/2)];
-		String[] playerNames = new String[(args.length/2)];
+            // TODO: Pay to user address
+            String[] tempAddy = new String[(args.length/2)];
             Long[] tempSats = new Long[(args.length/2)];
+            String[] playerNames = new String[(args.length/2)];
             int f = 0;
             for (String tempStr : args) {
             	System.out.println("args["+f+"]: {" + tempStr +"}");
@@ -58,87 +52,127 @@ public class TipCommand extends CommandAction {
             }
             f=0;
             for (int z = 0; z < args.length -1; z=z) {
-            System.out.println("args["+z+"]: {" + args[z].toString() +"}");
-                    for (final Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-          if (onlinePlayer.getName().equalsIgnoreCase(args[z])) {
-            if (!args[z].equalsIgnoreCase(player.getDisplayName())) {
-            playerNames[z] = onlinePlayer.getName();
-            NodeWallet tempWallet = new NodeWallet(onlinePlayer.getUniqueId().toString(), 0);
-            tempAddy[f] = tempWallet.address;
+            for (final Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (onlinePlayer.getName().equalsIgnoreCase(args[z])) {
+              playerNames[z] = onlinePlayer.getName();
+              sentTo.add(onlinePlayer);
+              NodeWallet tempWallet = new NodeWallet(onlinePlayer.getUniqueId().toString(), nodeWallet.walletArray);
+              tempAddy[f] = tempWallet.address;
+              System.out.println("tempAddy["+f+"]: " + tempAddy[f]);
             }
             }
-            }
-            System.out.println("tempAddy["+f+"]: " + tempAddy[f]);
-            sat = cryptoPlugin.convertCoinToSats(Double.parseDouble(args[z+1]));
+	     sat = CryptoPlugin.NODES.get(nodeWallet.walletArray).convertCoinToSats(Double.parseDouble(args[z+1]));
             System.out.println("args["+(z+1)+"]: " + args[z+1]);
             tempSats[f] = sat;
             totals = totals + sat;
             z = z+2;
             f++;
-            }         
+            }           
+            
+            
 
-                if (balance >= totals) {
-                  // TODO: Pay to user address
-                  String didSend = nodeWallet.sendMany(tempAddy, tempSats);
-                  //String didSend = "failed"; //test
-                  if (didSend != "failed") {
-                   for (int z = 0; z < args.length -1; z++) {
-                    player.sendMessage(
-                        ChatColor.GREEN
-                            + "You sent "
-                            + ChatColor.LIGHT_PURPLE
-                            + cryptoPlugin.globalDecimalFormat.format(tempSats[z+1])
-                            + " "
-                            + CryptoPlugin.NODES.get(nodeWallet.walletArray).CRYPTO_TICKER
-                            + ChatColor.GREEN
-                            + " to player "
-                            + ChatColor.BLUE
-                            + playerNames[z]);
-                   
-              	for (final Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-             	if (playerNames[z] == onlinePlayer.getName()) {
-                    onlinePlayer.sendMessage(
-                        ChatColor.GREEN
-                            + "You got "
-                            + ChatColor.LIGHT_PURPLE
-                            + cryptoPlugin.globalDecimalFormat.format(tempSats[z+1])
-                            + " "
-                            + CryptoPlugin.NODES.get(nodeWallet.walletArray).CRYPTO_TICKER
-                            + ChatColor.GREEN
-                            + " from user "
-                            + ChatColor.BLUE
-                            + player.getName()
-                            + ChatColor.BLUE
-                            + " "
-                            + cryptoPlugin.NODES.get(nodeWallet.walletArray).TX_URL
-                            + didSend);
-                    }
-                    }
-                    player.sendMessage(
-                        ChatColor.GREEN
-                            + "TXID: "
-				+ ChatColor.BLUE
-                            + cryptoPlugin.NODES.get(0).TX_URL
-                            + didSend);
-                    }
-                  } else {
-                    player.sendMessage(ChatColor.RED + "Tip failed.");
-                  }
-                } else {
-                  player.sendMessage(ChatColor.DARK_RED + "Not enough balance");
-                }
-              } catch (Exception e) {
-                player.sendMessage(ChatColor.DARK_RED + "Error. Please try again later.");
-                System.out.println(e);
-              }
+            double tempfee = 0.00;
+            if (CryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+    tempfee = nodeWallet.getFee();
       } else {
-        player.sendMessage("error sending that amount.");
-              return false;
+    tempfee = nodeWallet.getFee() * (0.226);
       }
-    } else {
-      return false;
-    }
+      	    System.out.println("balance" + balance);
+	    System.out.println("nodeWallet.getFee(): " + nodeWallet.getFee());
+            System.out.println("balance - nodeWallet.getFee(): " + (balance - nodeWallet.getFee()));
+	    System.out.println("tempfee " + tempfee);
+	    System.out.println("nodeWallet.getGetSpendable() - tempfee " + (nodeWallet.getGetSpendable() - tempfee));
+	    System.out.println("totals.doubleValue() " + totals.doubleValue());
+	    System.out.println("totals " + (totals * CryptoPlugin.NODES.get(nodeWallet.walletArray).BaseSat));
+	    double tempTotal = totals * CryptoPlugin.NODES.get(nodeWallet.walletArray).BaseSat;
+	    if ((nodeWallet.getGetSpendable() - tempfee) >= tempTotal) {
 
-    return true;
-  }
+            String didSend = nodeWallet.sendMany(tempAddy, tempSats);
+            //String didSend = "TEST";//test
+            if (didSend != "failed") {
+            int namecount = 0;
+             for (int z = 0; z < args.length - 1; z=z) {
+              player.sendMessage(
+                  ChatColor.GREEN
+                      + "Your tipped "
+                      + ChatColor.LIGHT_PURPLE
+                      + CryptoPlugin.NODES.get(nodeWallet.walletArray).GlobalDecimalFormat.format((Double.parseDouble(args[z+1])))
+                      + " "
+                      + CryptoPlugin.NODES.get(nodeWallet.walletArray).CRYPTO_TICKER
+                      + ChatColor.GREEN
+                      + " to player "
+                      + ChatColor.YELLOW
+                      + playerNames[namecount].toString());
+                      z = z + 2;
+                      namecount++;
+               }
+               player.sendMessage(
+                  ChatColor.GREEN
+                      + "Your tip tx: "
+                      + ChatColor.BLUE
+                      + cryptoPlugin.NODES.get(nodeWallet.walletArray).TX_URL
+                      + didSend);
+                      
+                      
+                                  f=0;
+            for (int z = 0; z < args.length -1; z=z) {
+            for (final Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (onlinePlayer.getName().equalsIgnoreCase(args[z])) {
+              double tmpSat = CryptoPlugin.NODES.get(nodeWallet.walletArray).convertSatsToCoin(tempSats[z]);
+              onlinePlayer.sendMessage(
+                  ChatColor.GREEN
+                      + player.getName()
+                      + " tipped you "
+                      + ChatColor.LIGHT_PURPLE
+                      + tmpSat
+                      + " "
+                      + CryptoPlugin.NODES.get(nodeWallet.walletArray).CRYPTO_TICKER
+                      + ChatColor.GREEN
+                      + "Your tip tx: "
+                      + ChatColor.BLUE
+                      + cryptoPlugin.NODES.get(nodeWallet.walletArray).TX_URL
+                      + didSend);
+                      
+                      System.out.println(player.getName()
+                      + " tipped you "
+                      + tmpSat
+                      + " "
+                      + CryptoPlugin.NODES.get(nodeWallet.walletArray).CRYPTO_TICKER
+                      + "Your tip tx: "
+                      + cryptoPlugin.NODES.get(nodeWallet.walletArray).TX_URL
+                      + didSend);
+              
+            }
+            }
+            z = z+2;
+            f++;
+            }  
+            } else {
+              player.sendMessage(ChatColor.RED + "tip failed.");
+              return false;
+            }
+          } else {
+            player.sendMessage(ChatColor.DARK_RED + "Not enough balance");
+            return false;
+          }
+        } catch (Exception e) {
+          player.sendMessage(ChatColor.DARK_RED + "Error. Please try again later.");
+          System.out.println(e);
+          return false;
+        }
+      } else {
+        player.sendMessage("error, are you sure you have the right arguments?");
+        return false;
+      }
+          return true;
+    }
 }
+
+
+
+
+
+
+
+
+

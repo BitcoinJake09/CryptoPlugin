@@ -20,40 +20,50 @@ public class WalletCommand extends CommandAction {
   public boolean run(
       CommandSender sender, Command cmd, String label, String[] args, Player player) {
     try {
-      nodeWallet = new NodeWallet(player.getUniqueId().toString(), 0);
+      int tempWhichWallet = cryptoPlugin.whichWallet.get(player.getUniqueId());
+      nodeWallet = new NodeWallet(player.getUniqueId().toString(), tempWhichWallet);
       String address = nodeWallet.address;
       System.out.print(player.getUniqueId().toString() + " [ADDRESS]: " + address);
       player.sendMessage(ChatColor.GREEN + "/wallet - Displays your wallet info.");
       player.sendMessage(
           ChatColor.GREEN
-              + "/tip <amount> <playername> - Tip is used for player to player transactions.");
+              + "/tip <playername> <amount> - Tip is used for player to player transactions.");
       player.sendMessage(
           ChatColor.GREEN
-              + "/withdraw <amount> <address> - withdraw is used for External transactions to an address.");
+              + "/withdraw <address> <amount> - withdraw is used for External transactions to an address.");
 
       player.sendMessage(ChatColor.GREEN + "Your Deposit address on this server: " + address);
-      String url = cryptoPlugin.NODES.get(0).ADDRESS_URL + address;
+      String url = cryptoPlugin.NODES.get(cryptoPlugin.whichWallet.get(player.getUniqueId())).ADDRESS_URL + address;
       player.sendMessage(ChatColor.WHITE + "" + ChatColor.UNDERLINE + url);
 
-      Double playerCoinBalance =
-          (Double)
-              (BigDecimal.valueOf(nodeWallet.getBalance()).doubleValue()
-                  * cryptoPlugin.baseSat);
+      Double playerCoinBalance = nodeWallet.getGetSpendable();
+
 
       player.sendMessage(
           ChatColor.GREEN
               + "wallet balance of "
-              + cryptoPlugin.globalDecimalFormat.format(playerCoinBalance));
+              + CryptoPlugin.NODES.get(nodeWallet.walletArray).GlobalDecimalFormat.format(playerCoinBalance));
 
-      DecimalFormat df = new DecimalFormat(CryptoPlugin.NODES.get(0).USD_DECIMALS);
+      DecimalFormat df = new DecimalFormat(CryptoPlugin.NODES.get(nodeWallet.walletArray).USD_DECIMALS);
 
       player.sendMessage(
           ChatColor.GREEN
               + "1 "
-              + cryptoPlugin.NODES.get(0).COINGECKO_CRYPTO
+              + cryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO
               + " = $"
               + df.format(
-                  Double.parseDouble(cryptoPlugin.getExchangeRate(cryptoPlugin.NODES.get(0).COINGECKO_CRYPTO))));
+                  Double.parseDouble(cryptoPlugin.getExchangeRate(cryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO))));
+            double tempfee = 0.00;
+            if (CryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+    tempfee = nodeWallet.getFee();
+      } else {
+    tempfee = nodeWallet.getFee() * (0.226);
+      }
+      player.sendMessage(
+          ChatColor.GREEN
+              + CryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO
+              + " feeEstimates: " + CryptoPlugin.NODES.get(nodeWallet.walletArray).GlobalDecimalFormat.format(tempfee));
+
 
     } catch (Exception e) {
       e.printStackTrace();
