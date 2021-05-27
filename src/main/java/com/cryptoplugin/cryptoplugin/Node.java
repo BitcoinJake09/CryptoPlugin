@@ -1,11 +1,20 @@
 package com.cryptoplugin.cryptoplugin;
 
+import java.text.*;
+import java.math.BigDecimal;
+
 public class Node {
     public String NODE_HOST, COINGECKO_CRYPTO, CRYPTO_TICKER, USD_DECIMALS, DENOMINATION_NAME, NODE_USERNAME, NODE_PASSWORD, ADDRESS_URL, TX_URL;
     public int NODE_PORT, CRYPTO_DECIMALS, DISPLAY_DECIMALS, CONFS_TARGET;
-    public Long DENOMINATION_FACTOR;
+    public Long DENOMINATION_FACTOR, WholeCoin;
+    public double BaseSat, DisplaySats;
+    public DecimalFormat GlobalDecimalFormat = new DecimalFormat("0.00000000");
+    public DecimalFormat DisplayDecimalFormat = new DecimalFormat("0.00000000");
     public Node() {
-        this.NODE_HOST="localhost";
+
+    }
+    public void DefaultNode(){
+	 this.NODE_HOST="localhost";
         this.NODE_PORT=18333;
         this.NODE_USERNAME="testuser";
         this.NODE_PASSWORD="testpass";
@@ -19,6 +28,9 @@ public class Node {
         this.DISPLAY_DECIMALS=8;
         this.CONFS_TARGET=6;
         this.DENOMINATION_FACTOR=1L;
+        wholeCoin();
+        oneSat();
+        howmanyDisplayDecimals();
     }
     public void setNode(String node_host, int node_port, String node_username, String node_password) {
         this.NODE_HOST=node_host;
@@ -37,5 +49,79 @@ public class Node {
         this.DISPLAY_DECIMALS=display_decimals;
         this.CONFS_TARGET=conf_target;
         this.DENOMINATION_FACTOR=denomination_factor;
+        wholeCoin();
+        oneSat();
+        howmanyDisplayDecimals();
     }
+    
+   public void wholeCoin() {
+    Long oneCoin = 1L;
+    for (int x = 1; x <= this.CRYPTO_DECIMALS; x++) {
+      // System.out.println(oneCoin);
+      oneCoin = oneCoin * 10L;
+    }
+    //System.out.println("total " + this.DENOMINATION_NAME + " in 1 coin: " + oneCoin);
+    this.WholeCoin = oneCoin;
+  }
+
+  public void oneSat() {
+    String DCF = "0.";
+    for (int y = 1; y <= this.CRYPTO_DECIMALS; y++) {
+      DCF = DCF + "0";
+    }
+    System.out.println(DCF);
+    DecimalFormat numberFormat = new DecimalFormat(DCF);
+    this.GlobalDecimalFormat = numberFormat;
+    Double oneSats = 1.0;
+    for (int x = 1; x <= this.CRYPTO_DECIMALS; x++) {
+      //System.out.println(numberFormat.format(oneSats));
+      oneSats = oneSats * 0.1;
+    }
+    //System.out.println("Lowest Crypto Decimal set: " + globalDecimalFormat.format(oneSats));
+    this.BaseSat = Double.parseDouble(this.GlobalDecimalFormat.format(oneSats));
+  }
+  
+    public void howmanyDisplayDecimals() {
+    String DCF = "0.";
+    for (int y = 1; y <= this.DISPLAY_DECIMALS; y++) {
+      DCF = DCF + "0";
+    }
+    //System.out.println(DCF);
+    DecimalFormat numberFormat = new DecimalFormat(DCF);
+    this.DisplayDecimalFormat = numberFormat;
+    Double oneSats = 1.0;
+    for (int x = 1; x <= this.DISPLAY_DECIMALS; x++) {
+      // System.out.println(numberFormat.format(oneSats));
+      oneSats = oneSats * 0.1;
+    }
+    //System.out.println("Lowest Display Decimal set: " + displayDecimalFormat.format(oneSats));
+    DisplaySats = oneSats;
+  }
+  
+    public Long convertCoinToSats(Double wholeCoinAmount) {
+    Double tempAmount = wholeCoinAmount;
+    Long oneCoin = 1L;
+    for (int x = 1; x <= this.CRYPTO_DECIMALS; x++) {
+      // System.out.println(oneCoin);
+      // tempAmount=tempAmount*10;
+      oneCoin = oneCoin * 10L;
+    }
+    BigDecimal decimalSat = new BigDecimal(tempAmount * oneCoin);
+    // System.out.println("tempAmount : "+decimalSat);
+    return (Long.parseLong(decimalSat.toString()));
+  }
+
+  public Double convertSatsToCoin(Long satsIn) {
+    Long tempAmount = satsIn;
+    Double oneCoin = 1.0;
+    for (int x = 1; x <= this.CRYPTO_DECIMALS; x++) {
+      // System.out.println(oneCoin);
+      // tempAmount=tempAmount*10;
+      oneCoin = oneCoin * 0.1;
+    }
+    BigDecimal decimalSat = new BigDecimal(tempAmount * oneCoin);
+    // System.out.println("tempAmount : "+decimalSat);
+    return (Double.parseDouble(decimalSat.toString()));
+  } 
+
 }

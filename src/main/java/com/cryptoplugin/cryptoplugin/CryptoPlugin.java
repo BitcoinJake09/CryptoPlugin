@@ -49,11 +49,7 @@ public class CryptoPlugin extends JavaPlugin {
 
   public Long wallet_balance_cache = 0L;
   public Double exRate = 99999999.99;
-  public static DecimalFormat globalDecimalFormat = new DecimalFormat("0.00000000");
-  public static DecimalFormat displayDecimalFormat = new DecimalFormat("0.00000000");
-  public static Double baseSat ;//= oneSat();
-  public Double displaySats ;//= howmanyDisplayDecimals();
-  public Long oneCoinSats ;//= wholeCoin();
+
 
   private Map<String, CommandAction> commands;
   private Map<String, CommandAction> modCommands;
@@ -87,10 +83,7 @@ public class CryptoPlugin extends JavaPlugin {
       if (NODES.get(0).NODE_HOST != null) {
       	for (int x = 0; x < NODES.size(); x++) {
         System.out.println("[startup] checking " + NODES.get(x).CRYPTO_TICKER + " node connection");
-        baseSat = oneSat();
-	displaySats = howmanyDisplayDecimals();
-	oneCoinSats = wholeCoin();
-          System.out.println("baseSat: "+ globalDecimalFormat.format(baseSat));
+          System.out.println("baseSat: "+ NODES.get(x).GlobalDecimalFormat.format(NODES.get(x).BaseSat));
         nodeWallet = new NodeWallet("CryptoPlugin", x);
         nodeWallet.getBlockChainInfo();
         }
@@ -141,7 +134,7 @@ for (int i = 0; i < nodeList.length; i++) {
             Object obj = jsonParser.parse(reader);
  
             JSONArray nodeData = (JSONArray) obj;
-            System.out.println(nodeData);
+            //System.out.println(nodeData);
             final String tempName = nodeList[n].getName().substring(0, nodeList[n].getName().lastIndexOf('.'));
             final int whichNode = n;
             nodeData.forEach( fnodes -> parseJSONnodes( (JSONObject) fnodes, tempName, whichNode ) );
@@ -166,23 +159,28 @@ for (int i = 0; i < nodeList.length; i++) {
   	NODES.add(new Node());
   	//NODES.set(0, new Node());
 	JSONObject fnodesObj = (JSONObject) fnodes.get(fileName);
-          String tempNode_host = (String) fnodesObj.get("NODE_HOST");    
-	Integer tempNode_port = Integer.parseInt((String) fnodesObj.get("NODE_PORT"));  
-	String tempNode_username = (String) fnodesObj.get("NODE_USERNAME");  
-	String tempNode_password = (String) fnodesObj.get("NODE_PASSWORD");  
+          String tempNode_host = (String) fnodesObj.get("NODE_HOST") != null ? fnodesObj.get("NODE_HOST").toString() : NODES.get(nodeCount).NODE_HOST;    
+          String tempNode_port1 = (String) fnodesObj.get("NODE_PORT") != null ? fnodesObj.get("NODE_PORT").toString() : String.valueOf(NODES.get(nodeCount).NODE_PORT);            
+	Integer tempNode_port = Integer.parseInt(tempNode_port1);  
+	String tempNode_username = (String) fnodesObj.get("NODE_USERNAME") != null ? fnodesObj.get("NODE_USERNAME").toString() : NODES.get(nodeCount).NODE_USERNAME;  
+	String tempNode_password = (String) fnodesObj.get("NODE_PASSWORD") != null ? fnodesObj.get("NODE_PASSWORD").toString() : NODES.get(nodeCount).NODE_PASSWORD;  
         NODES.get(nodeCount).setNode(tempNode_host, tempNode_port, tempNode_username, tempNode_password);
         
 
-	String tempCoingecko_crypto = (String) fnodesObj.get("COINGECKO_CRYPTO");    
-	String tempCrypto_ticker = (String) fnodesObj.get("CRYPTO_TICKER");  
-	String tempUSD_decimals = (String) fnodesObj.get("USD_DECIMALS");  
-	String tempDenomination_name = (String) fnodesObj.get("DENOMINATION_NAME");  
-	String tempAddress_url = (String) fnodesObj.get("ADDRESS_URL");    
-	String tempTX_url = (String) fnodesObj.get("TX_URL");  
-	Integer tempCrypto_decimals = Integer.parseInt((String) fnodesObj.get("CRYPTO_DECIMALS"));
-	Integer tempDisplay_decimals = Integer.parseInt((String) fnodesObj.get("DISPLAY_DECIMALS"));  
-	Integer tempConfs_taget = Integer.parseInt((String) fnodesObj.get("CONFS_TARGET"));  
-	long tempDenomination_factor = Long.valueOf((String) fnodesObj.get("DENOMINATION_FACTOR"));  
+	String tempCoingecko_crypto = (String) fnodesObj.get("COINGECKO_CRYPTO") != null ? fnodesObj.get("COINGECKO_CRYPTO").toString() : NODES.get(nodeCount).COINGECKO_CRYPTO;    
+	String tempCrypto_ticker = (String) fnodesObj.get("CRYPTO_TICKER") != null ? fnodesObj.get("CRYPTO_TICKER").toString() : NODES.get(nodeCount).CRYPTO_TICKER;  
+	String tempUSD_decimals = (String) fnodesObj.get("USD_DECIMALS") != null ? fnodesObj.get("USD_DECIMALS").toString() : NODES.get(nodeCount).USD_DECIMALS;  
+	String tempDenomination_name = (String) fnodesObj.get("DENOMINATION_NAME") != null ? fnodesObj.get("DENOMINATION_NAME").toString() : NODES.get(nodeCount).DENOMINATION_NAME; 
+	String tempAddress_url = (String) fnodesObj.get("ADDRESS_URL") != null ? fnodesObj.get("ADDRESS_URL").toString() : NODES.get(nodeCount).ADDRESS_URL;   
+	String tempTX_url = (String) fnodesObj.get("TX_URL") != null ? fnodesObj.get("TX_URL").toString() : NODES.get(nodeCount).TX_URL;
+          String tempCrypto_decimals1 = (String) fnodesObj.get("CRYPTO_DECIMALS") != null ? fnodesObj.get("CRYPTO_DECIMALS").toString() : String.valueOf(NODES.get(nodeCount).CRYPTO_DECIMALS);	 
+	Integer tempCrypto_decimals = Integer.parseInt(tempCrypto_decimals1);
+	          String tempDisplay_decimals1 = (String) fnodesObj.get("DISPLAY_DECIMALS") != null ? fnodesObj.get("DISPLAY_DECIMALS").toString() : String.valueOf(NODES.get(nodeCount).DISPLAY_DECIMALS);
+	Integer tempDisplay_decimals = Integer.parseInt(tempDisplay_decimals1);  
+	          String tempConfs_taget1 = (String) fnodesObj.get("CONFS_TARGET") != null ? fnodesObj.get("CONFS_TARGET").toString() : String.valueOf(NODES.get(nodeCount).CONFS_TARGET);
+	Integer tempConfs_taget = Integer.parseInt(tempConfs_taget1);
+		          String tempDenomination_factor1 = (String) fnodesObj.get("DENOMINATION_FACTOR") != null ? fnodesObj.get("DENOMINATION_FACTOR").toString() : String.valueOf(NODES.get(nodeCount).DENOMINATION_FACTOR);  
+	long tempDenomination_factor = Long.valueOf(tempDenomination_factor1);  
         NODES.get(nodeCount).config(tempCoingecko_crypto, tempCrypto_ticker, tempUSD_decimals, tempDenomination_name, tempAddress_url, tempTX_url, tempCrypto_decimals, tempDisplay_decimals, tempConfs_taget, tempDenomination_factor);
   
   }
@@ -192,45 +190,45 @@ for (int i = 0; i < nodeList.length; i++) {
   ADMIN_UUID =
       System.getenv("ADMIN_UUID") != null ? UUID.fromString(System.getenv("ADMIN_UUID")) : null;
   String tempNode_host =
-      System.getenv("NODE_HOST") != null ? System.getenv("NODE_HOST") : null;
+      System.getenv("NODE_HOST") != null ? System.getenv("NODE_HOST") : NODES.get(0).NODE_HOST;
   Integer tempNode_port =
-      System.getenv("NODE_PORT") != null ? Integer.parseInt(System.getenv("NODE_PORT")) : 8332;
-  String tempNode_username = System.getenv("NODE_USERNAME");
-  String tempNode_password = System.getenv("NODE_PASSWORD");
+      System.getenv("NODE_PORT") != null ? Integer.parseInt(System.getenv("NODE_PORT")) : NODES.get(0).NODE_PORT;
+  String tempNode_username = System.getenv("NODE_USERNAME") != null ? System.getenv("NODE_USERNAME") : NODES.get(0).NODE_USERNAME;
+  String tempNode_password = System.getenv("NODE_PASSWORD") != null ? System.getenv("NODE_PASSWORD") : NODES.get(0).NODE_PASSWORD;
 
         NODES.get(0).setNode(tempNode_host, tempNode_port, tempNode_username, tempNode_password);
 
   String tempCoingecko_crypto =
-      System.getenv("COINGECKO_CRYPTO") != null ? System.getenv("COINGECKO_CRYPTO") : "bitcoin";
+      System.getenv("COINGECKO_CRYPTO") != null ? System.getenv("COINGECKO_CRYPTO") : NODES.get(0).COINGECKO_CRYPTO;
   String tempCrypto_ticker =
-      System.getenv("CRYPTO_TICKER") != null ? System.getenv("CRYPTO_TICKER") : "BTC";
+      System.getenv("CRYPTO_TICKER") != null ? System.getenv("CRYPTO_TICKER") : NODES.get(0).CRYPTO_TICKER;
   Long tempDenomination_factor =
       System.getenv("DENOMINATION_FACTOR") != null
           ? Long.parseLong(System.getenv("DENOMINATION_FACTOR"))
-          : 1L;
+          : NODES.get(0).DENOMINATION_FACTOR;
   Integer tempCrypto_decimals =
       System.getenv("CRYPTO_DECIMALS") != null
           ? Integer.parseInt(System.getenv("CRYPTO_DECIMALS"))
-          : 8;
+          : NODES.get(0).CRYPTO_DECIMALS;
   Integer tempDisplay_decimals =
       System.getenv("DISPLAY_DECIMALS") != null
           ? Integer.parseInt(System.getenv("DISPLAY_DECIMALS"))
-          : 8;
+          : NODES.get(0).DISPLAY_DECIMALS;
   String tempUSD_decimals =
-      System.getenv("USD_DECIMALS") != null ? System.getenv("USD_DECIMALS") : "0.00";
+      System.getenv("USD_DECIMALS") != null ? System.getenv("USD_DECIMALS") : NODES.get(0).USD_DECIMALS;
   Integer tempConfs_taget =
-      System.getenv("CONFS_TARGET") != null ? Integer.parseInt(System.getenv("CONFS_TARGET")) : 6;
+      System.getenv("CONFS_TARGET") != null ? Integer.parseInt(System.getenv("CONFS_TARGET")) : NODES.get(0).CONFS_TARGET;
   String tempDenomination_name =
-      System.getenv("DENOMINATION_NAME") != null ? System.getenv("DENOMINATION_NAME") : "Sats";
+      System.getenv("DENOMINATION_NAME") != null ? System.getenv("DENOMINATION_NAME") : NODES.get(0).DENOMINATION_NAME;
 
   String tempAddress_url =
       System.getenv("ADDRESS_URL") != null
           ? System.getenv("ADDRESS_URL")
-          : "https://www.blockchain.com/btc/address/";
+          : NODES.get(0).ADDRESS_URL;
   String tempTX_url =
       System.getenv("TX_URL") != null
           ? System.getenv("TX_URL")
-          : "https://www.blockchain.com/btc/tx/";
+          : NODES.get(0).TX_URL;
           
           NODES.get(0).config(tempCoingecko_crypto, tempCrypto_ticker, tempUSD_decimals, tempDenomination_name, tempAddress_url, tempTX_url, tempCrypto_decimals, tempDisplay_decimals, tempConfs_taget, tempDenomination_factor);
           
@@ -419,75 +417,6 @@ for (int i = 0; i < nodeList.length; i++) {
     }
   }
 
-  public Long convertCoinToSats(Double wholeCoinAmount) {
-    Double tempAmount = wholeCoinAmount;
-    Long oneCoin = 1L;
-    for (int x = 1; x <= NODES.get(0).CRYPTO_DECIMALS; x++) {
-      // System.out.println(oneCoin);
-      // tempAmount=tempAmount*10;
-      oneCoin = oneCoin * 10L;
-    }
-    BigDecimal decimalSat = new BigDecimal(tempAmount * oneCoin);
-    // System.out.println("tempAmount : "+decimalSat);
-    return (Long.parseLong(decimalSat.toString()));
-  }
-
-  public Double convertSatsToCoin(Long satsIn) {
-    Long tempAmount = satsIn;
-    Double oneCoin = 1.0;
-    for (int x = 1; x <= NODES.get(0).CRYPTO_DECIMALS; x++) {
-      // System.out.println(oneCoin);
-      // tempAmount=tempAmount*10;
-      oneCoin = oneCoin * 0.1;
-    }
-    BigDecimal decimalSat = new BigDecimal(tempAmount * oneCoin);
-    // System.out.println("tempAmount : "+decimalSat);
-    return (Double.parseDouble(decimalSat.toString()));
-  }
-
-  public Long wholeCoin() {
-    Long oneCoin = 1L;
-    for (int x = 1; x <= NODES.get(0).CRYPTO_DECIMALS; x++) {
-      // System.out.println(oneCoin);
-      oneCoin = oneCoin * 10L;
-    }
-    System.out.println("total " + NODES.get(0).DENOMINATION_NAME + " in 1 coin: " + oneCoin);
-    return oneCoin;
-  }
-
-  public static Double oneSat() {
-    String DCF = "0.";
-    for (int y = 1; y <= NODES.get(0).CRYPTO_DECIMALS; y++) {
-      DCF = DCF + "0";
-    }
-    System.out.println(DCF);
-    DecimalFormat numberFormat = new DecimalFormat(DCF);
-    globalDecimalFormat = numberFormat;
-    Double oneSats = 1.0;
-    for (int x = 1; x <= NODES.get(0).CRYPTO_DECIMALS; x++) {
-      System.out.println(numberFormat.format(oneSats));
-      oneSats = oneSats * 0.1;
-    }
-    System.out.println("Lowest Crypto Decimal set: " + globalDecimalFormat.format(oneSats));
-    return Double.parseDouble(globalDecimalFormat.format(oneSats));
-  }
-
-  public Double howmanyDisplayDecimals() {
-    String DCF = "0.";
-    for (int y = 1; y <= NODES.get(0).DISPLAY_DECIMALS; y++) {
-      DCF = DCF + "0";
-    }
-    System.out.println(DCF);
-    DecimalFormat numberFormat = new DecimalFormat(DCF);
-    displayDecimalFormat = numberFormat;
-    Double oneSats = 1.0;
-    for (int x = 1; x <= NODES.get(0).DISPLAY_DECIMALS; x++) {
-      // System.out.println(numberFormat.format(oneSats));
-      oneSats = oneSats * 0.1;
-    }
-    System.out.println("Lowest Display Decimal set: " + displayDecimalFormat.format(oneSats));
-    return oneSats;
-  }
   /* CRYPTO_DECIMALS @8
   cryptoplugin | [22:46:35 INFO]: #.00000000
   cryptoplugin | [22:46:35 INFO]: Lowest Decimal set: .00000001

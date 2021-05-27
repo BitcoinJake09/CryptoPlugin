@@ -25,12 +25,14 @@ public class NodeWallet {
     this.walletArray = whichWallet;
    
     try {
-      if (getAccountAddress().equals("[]")) this.address = getNewAccountAddress();
-      else this.address = getAccountAddress();
+      if (getAccountAddress().equals("[]")) {
+       this.address = getNewAccountAddress();
+       }
+      else {this.address = getAccountAddress();}
       System.out.println("address loaded: " + this.address);
     } catch (Exception e) {
       e.printStackTrace();
-      System.out.println("[address] error.");
+      //System.out.println("[address] error.");
     }
   }
 
@@ -63,6 +65,7 @@ public class NodeWallet {
       OutputStreamWriter out = new OutputStreamWriter(con.getOutputStream());
       out.write(jsonObject.toString());
       out.close();
+            if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
     int responseCode = con.getResponseCode();
     BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
     String inputLine;
@@ -79,6 +82,24 @@ public class NodeWallet {
     return tempaddy;
 
 
+      } else {
+    int responseCode = con.getResponseCode();
+    BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+    String inputLine;
+    StringBuffer response = new StringBuffer();
+    while ((inputLine = in.readLine()) != null) {
+      response.append(inputLine);
+    }
+    in.close();
+    parser = new JSONParser();
+    JSONObject response_object = (JSONObject) parser.parse(response.toString());
+          if (!(response_object.get("result").toString().equals("[]"))) {
+	String subStr = response_object.get("result").toString().substring(response_object.get("result").toString().indexOf("[") + 1,response_object.get("result").toString().indexOf("]"));
+      String finalString = subStr.substring(subStr.indexOf("\"") + 1, subStr.lastIndexOf("\""));
+            return finalString; // just give them an empty object
+          }
+            return response_object.get("result").toString(); // just give them an empty object
+      }
     } catch (IOException e) {
       System.out.println("address not found for: " + account_id);
       System.out.println("will attempt to create address.");
@@ -134,14 +155,16 @@ public class NodeWallet {
       final JSONObject jsonObject = new JSONObject();
       jsonObject.put("jsonrpc", "1.0");
       jsonObject.put("id", "cryptoplugin");
-      jsonObject.put("method", "getbalance");
+
       JSONArray params = new JSONArray();
             if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+                  jsonObject.put("method", "getbalance");
             params.add(account_id);
       } else {
+            jsonObject.put("method", "getreceivedbyaddress");
       params.add(this.address);
       }
-      System.out.println("Parms: " + params);
+      //System.out.println("Parms: " + params);
       jsonObject.put("params", params);
       URL url = new URL("http://" + CryptoPlugin.NODES.get(this.walletArray).NODE_HOST + ":" + CryptoPlugin.NODES.get(this.walletArray).NODE_PORT);
       HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -155,7 +178,7 @@ public class NodeWallet {
       con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
       con.setDoOutput(true);
       OutputStreamWriter out = new OutputStreamWriter(con.getOutputStream());
-      System.out.println(jsonObject.toString());
+      //System.out.println(jsonObject.toString());
       out.write(jsonObject.toString());
       out.close();
 
@@ -169,10 +192,98 @@ public class NodeWallet {
       in.close();
       parser = new JSONParser();
       JSONObject response_object = (JSONObject) parser.parse(response.toString());
-      System.out.println(response_object);
-      Double d = Double.parseDouble(response_object.get("result").toString().trim()) * 100000000L;
+      //System.out.println(response_object);
+      Double d = Double.parseDouble(response_object.get("result").toString().trim()) * CryptoPlugin.NODES.get(this.walletArray).WholeCoin;
       final Long balance = d.longValue();
       return balance;
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return 0L;
+  }
+
+  public double getGetSpendable()
+      throws IOException, org.json.simple.parser.ParseException {
+    try {
+      JSONParser parser = new JSONParser();
+      final JSONObject UTXOs = this.listunspent();
+      //System.out.println("listunspent?: "+ UTXOs.toString());
+      //System.out.println("UTXOs.toString().get(result)?: "+ UTXOs.get("result").toString());
+      JSONArray jsonArray = (JSONArray) parser.parse(UTXOs.get("result").toString());
+      //System.out.println("jsonArray.toString()?: "+ jsonArray.toString());
+      double[] tempAmount = new double[jsonArray.size()];
+      double finalAmount = 0.0;
+      String[] tempTXID = new String[jsonArray.size()];
+      int[] tempVout = new int[jsonArray.size()];
+      for(int i=0;i<jsonArray.size();i++){
+        Object obj = jsonArray.get(i);
+        JSONObject json = new JSONObject();
+        if (obj instanceof JSONObject) {
+          json = ((JSONObject) obj);
+        }
+        tempAmount[i] = Double.parseDouble(json.get("amount").toString());
+        finalAmount = finalAmount + Double.parseDouble(json.get("amount").toString());
+        tempTXID[i] = json.get("txid").toString();
+        tempVout[i] = Integer.parseInt(json.get("vout").toString());
+      }
+    //System.out.println("UTXO balance: "+ finalAmount);
+    return finalAmount;
+    
+        } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return 0.0;
+  }
+
+public double getFee()
+      throws IOException, org.json.simple.parser.ParseException {
+    try {
+      JSONParser parser = new JSONParser();
+
+      final JSONObject jsonObject = new JSONObject();
+      jsonObject.put("jsonrpc", "1.0");
+      jsonObject.put("id", "cryptoplugin");
+      jsonObject.put("method", "estimatefee");
+      JSONArray params = new JSONArray();
+            if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+            //params.add(account_id);
+      } else {
+      params.add(CryptoPlugin.NODES.get(this.walletArray).CONFS_TARGET);
+      }
+      //System.out.println("Parms: " + params);
+      jsonObject.put("params", params);
+      URL url = new URL("http://" + CryptoPlugin.NODES.get(this.walletArray).NODE_HOST + ":" + CryptoPlugin.NODES.get(this.walletArray).NODE_PORT);
+      HttpURLConnection con = (HttpURLConnection) url.openConnection();
+      String userPassword = CryptoPlugin.NODES.get(this.walletArray).NODE_USERNAME + ":" + CryptoPlugin.NODES.get(this.walletArray).NODE_PASSWORD;
+      String encoding = Base64.getEncoder().encodeToString(userPassword.getBytes());
+      con.setRequestProperty("Authorization", "Basic " + encoding);
+
+      con.setRequestMethod("POST");
+      con.setRequestProperty("User-Agent", "Mozilla/1.22 (compatible; MSIE 2.0; Windows 3.1)");
+      con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+      con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+      con.setDoOutput(true);
+      OutputStreamWriter out = new OutputStreamWriter(con.getOutputStream());
+      //System.out.println(jsonObject.toString());
+      out.write(jsonObject.toString());
+      out.close();
+
+      int responseCode = con.getResponseCode();
+      BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+      String inputLine;
+      StringBuffer response = new StringBuffer();
+      while ((inputLine = in.readLine()) != null) {
+        response.append(inputLine);
+      }
+      in.close();
+      parser = new JSONParser();
+      JSONObject response_object = (JSONObject) parser.parse(response.toString());
+      //System.out.println(response_object);
+      Double fee = Double.parseDouble(response_object.get("result").toString());// * 100000000L;
+      //final double fee = d.longValue();
+      //setFee(fee);
+      return fee;
 
     } catch (Exception e) {
       e.printStackTrace();
@@ -218,7 +329,7 @@ public class NodeWallet {
       in.close();
       parser = new JSONParser();
       JSONObject response_object = (JSONObject) parser.parse(response.toString());
-      System.out.println(response_object);
+      //System.out.println(response_object);
       return new JSONObject(response_object); // just give them an empty object
 
     } catch (IOException e) {
@@ -276,7 +387,7 @@ public class NodeWallet {
       in.close();
       parser = new JSONParser();
       JSONObject response_object = (JSONObject) parser.parse(response.toString());
-      System.out.println(response_object);
+      //System.out.println(response_object);
       return new JSONObject(response_object); // just give them an empty object
 
     } catch (IOException e) {
@@ -339,12 +450,16 @@ public class NodeWallet {
 
   public String sendMany(String[] addressArray, Long[] sat) throws IOException, ParseException {
     try {
+    double stopSat = 0.0;
+    for (int s=0; s < sat.length; s++) {
+    	stopSat = stopSat + (sat[s] * CryptoPlugin.NODES.get(this.walletArray).BaseSat);
+    }
       JSONParser parser = new JSONParser();
     final JSONObject UTXOs = this.listunspent();
-    	System.out.println("listunspent?: "+ UTXOs.toString());
-        	System.out.println("UTXOs.toString().get(result)?: "+ UTXOs.get("result").toString());
+    	//System.out.println("listunspent?: "+ UTXOs.toString());
+        	//System.out.println("UTXOs.toString().get(result)?: "+ UTXOs.get("result").toString());
         JSONArray jsonArray = (JSONArray) parser.parse(UTXOs.get("result").toString());
-             	System.out.println("jsonArray.toString()?: "+ jsonArray.toString());
+             	//System.out.println("jsonArray.toString()?: "+ jsonArray.toString());
     double[] tempAmount = new double[jsonArray.size()];
     String[] tempTXID = new String[jsonArray.size()];
     int[] tempVout = new int[jsonArray.size()];
@@ -367,34 +482,43 @@ public class NodeWallet {
     JSONArray FinalUTXOarray = new JSONArray();
     double totalBalance = 0.0;
     for(int i=0;i<jsonArray.size();i++){
+    if (totalBalance < (stopSat + this.getFee())) {
     JSONObject tempObject = new JSONObject();
     tempObject.put("txid" , tempTXID[i]);
     tempObject.put("vout" , tempVout[i]);
-    System.out.println("tempTXID[i]: "+tempTXID[i]);
-    System.out.println("tempVout[i]: " + tempVout[i]);
+    //tempObject.put("amount" , tempAmount[i]);
+    //System.out.println("tempTXID[i]: "+tempTXID[i]);
+    //System.out.println("tempVout[i]: " + tempVout[i]);
+    //System.out.println("tempAmount[i]: " + tempAmount[i]);
+
     FinalUTXOarray.add(tempObject);
 	totalBalance = totalBalance + tempAmount[i];
+     }
     }
 	params.add(FinalUTXOarray);
-	System.out.println("params: " + params.toString());
+	//System.out.println("params: " + params.toString());
 	double satsRequested = 0.0;
     final JSONObject addresses = new JSONObject();
       for (int x = 0; x < addressArray.length; x++) {
-      System.out.println("sat["+x+"]: " + sat[x]);
-      System.out.println("cryptoPlugin.baseSat: "+ CryptoPlugin.globalDecimalFormat.format(CryptoPlugin.baseSat));
-        BigDecimal decimalSat = new BigDecimal(sat[x] * CryptoPlugin.baseSat);
+      //System.out.println("sat["+x+"]: " + sat[x]);
+      //System.out.println("cryptoPlugin.baseSat: "+ CryptoPlugin.NODES.get(this.walletArray).GlobalDecimalFormat.format(CryptoPlugin.NODES.get(this.walletArray).BaseSat));
+        BigDecimal decimalSat = new BigDecimal(sat[x] * CryptoPlugin.NODES.get(this.walletArray).BaseSat);
         decimalSat = decimalSat.setScale(CryptoPlugin.NODES.get(this.walletArray).CRYPTO_DECIMALS, BigDecimal.ROUND_DOWN);
-        System.out.println("addressArray["+x+"]: "+ addressArray[x] + " decimalSat: "+ decimalSat);
+        //System.out.println("addressArray["+x+"]: "+ addressArray[x] + " decimalSat: "+ decimalSat);
         addresses.put(addressArray[x], decimalSat.doubleValue());
         satsRequested = satsRequested + decimalSat.doubleValue();
     }
     double changeRequest = totalBalance - satsRequested;
-    changeRequest = changeRequest - (changeRequest * 0.005);
+    if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+    changeRequest = changeRequest - (getFee());
+      } else {
+    changeRequest = changeRequest - (getFee() * (0.226));
+      }
     BigDecimal changeSat = new BigDecimal(changeRequest);
         changeSat = changeSat.setScale(CryptoPlugin.NODES.get(this.walletArray).CRYPTO_DECIMALS, BigDecimal.ROUND_DOWN);
     addresses.put(this.address, changeSat);
     params.add(addresses);
-    System.out.println("params" + params);
+    //System.out.println("params" + params);
     jsonObject.put("params", params);
       // System.out.println("Checking blockchain info...");
       URL url = new URL("http://" + CryptoPlugin.NODES.get(this.walletArray).NODE_HOST + ":" + CryptoPlugin.NODES.get(this.walletArray).NODE_PORT);
@@ -424,9 +548,9 @@ public class NodeWallet {
       in.close();
 
       JSONObject response_object = (JSONObject) parser.parse(response.toString());
-      System.out.println("unsigned: " + (String) response_object.get("result"));
+      //System.out.println("unsigned: " + (String) response_object.get("result"));
       String signed = signrawtransaction((String) response_object.get("result"), tempTXID, tempVout);
-      System.out.println("signed: " + signed);
+      //System.out.println("signed: " + signed);
       String sent = sendrawtransaction(signed);
       return sent;
 
