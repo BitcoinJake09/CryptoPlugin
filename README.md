@@ -12,6 +12,10 @@ To compile CryptoPlugin:
 
 .jar file will be in target folder.
 
+Stable Release Jar:
+=========================================
+https://github.com/BitcoinJake09/CryptoPlugin/releases
+
 To run compiled Jar:
 =========================================
 1. Download latest spigot jar
