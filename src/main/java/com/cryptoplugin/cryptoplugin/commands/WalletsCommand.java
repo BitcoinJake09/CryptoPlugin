@@ -91,6 +91,8 @@ public class WalletsCommand extends CommandAction {
 	    	int walletNum = Integer.parseInt(args[1]) - 1;
 	    	if (walletNum < cryptoPlugin.NODES.size()) {
 	        cryptoPlugin.whichWallet.put(player.getUniqueId(), walletNum);
+	        player.sendMessage(
+          ChatColor.DARK_GREEN + "wallet changed to: " + cryptoPlugin.NODES.get(walletNum).CRYPTO_TICKER);
 	        } else {
 	         player.sendMessage(
           ChatColor.GREEN + "wallet not found, please select a # = to or less than: " + (cryptoPlugin.NODES.size() - 1) + " or select the cryptos ticker");
@@ -101,6 +103,7 @@ public class WalletsCommand extends CommandAction {
       	    if (args[1].equalsIgnoreCase(cryptoPlugin.NODES.get(y).CRYPTO_TICKER)) {
       	            NodeWallet tempWallet = new NodeWallet("CryptoPlugin", y);
 		cryptoPlugin.whichWallet.put(player.getUniqueId(), tempWallet.walletArray);
+	player.sendMessage(ChatColor.DARK_GREEN + "wallet changed to: " + cryptoPlugin.NODES.get(y).CRYPTO_TICKER);
         return true;
         }
 	    }
