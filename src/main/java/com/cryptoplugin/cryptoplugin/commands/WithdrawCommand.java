@@ -36,7 +36,7 @@ public class WithdrawCommand extends CommandAction {
     if (args.length >= 2) {
         System.out.println("args.length: "+args.length);
         try {
-          Long balance = Double.valueOf(nodeWallet.getGetSpendable()).longValue();
+          double balance = nodeWallet.getGetSpendable();
             Long sat = 0L;
             Long totals = 0L;
 
@@ -63,19 +63,7 @@ public class WithdrawCommand extends CommandAction {
             
             
 
-            double tempfee = 0.00;
-            if (CryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
-    tempfee = nodeWallet.getFee();
-      } else {
-    tempfee = nodeWallet.getFee() * (0.226);
-      }
-      	    System.out.println("balance" + balance);
-	    System.out.println("nodeWallet.getFee(): " + nodeWallet.getFee());
-            System.out.println("balance - nodeWallet.getFee(): " + (balance - nodeWallet.getFee()));
-	    System.out.println("tempfee " + tempfee);
-	    System.out.println("nodeWallet.getGetSpendable() - tempfee " + (nodeWallet.getGetSpendable() - tempfee));
-	    System.out.println("totals.doubleValue() " + totals.doubleValue());
-	    System.out.println("totals " + (totals * CryptoPlugin.NODES.get(nodeWallet.walletArray).BaseSat));
+            double tempfee = cryptoPlugin.NODES.get(nodeWallet.walletArray).txFee;
 	    double tempTotal = totals * CryptoPlugin.NODES.get(nodeWallet.walletArray).BaseSat;
 	    if ((nodeWallet.getGetSpendable() - tempfee) >= tempTotal) {
 
