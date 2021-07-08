@@ -4,10 +4,10 @@ import java.text.*;
 import java.math.BigDecimal;
 
 public class Node {
-    public String NODE_HOST, COINGECKO_CRYPTO, CRYPTO_TICKER, USD_DECIMALS, DENOMINATION_NAME, NODE_USERNAME, NODE_PASSWORD, ADDRESS_URL, TX_URL;
+    public String NODE_HOST, COINGECKO_CRYPTO, CRYPTO_TICKER, USD_DECIMALS, DENOMINATION_NAME, NODE_USERNAME, NODE_PASSWORD, ADDRESS_URL, TX_URL, P_FLAG;
     public int NODE_PORT, CRYPTO_DECIMALS, DISPLAY_DECIMALS, CONFS_TARGET;
     public Long DENOMINATION_FACTOR, WholeCoin;
-    public double BaseSat, DisplaySats;
+    public double BaseSat, DisplaySats, exRate, txFee;
     public DecimalFormat GlobalDecimalFormat = new DecimalFormat("0.00000000");
     public DecimalFormat DisplayDecimalFormat = new DecimalFormat("0.00000000");
     public Node() {
@@ -20,6 +20,7 @@ public class Node {
         this.NODE_PASSWORD="testpass";
         this.COINGECKO_CRYPTO="bitcoin";
         this.CRYPTO_TICKER="BTC";
+        this.P_FLAG="BTC";
         this.USD_DECIMALS="0.00";
         this.DENOMINATION_NAME="Sats";
         this.ADDRESS_URL="https://www.blockchain.com/btc/address/";
@@ -38,9 +39,20 @@ public class Node {
         this.NODE_USERNAME=node_username;
         this.NODE_PASSWORD=node_password;
     }
-    public void config(String coingecko_crypto, String crypto_ticker, String usd_decimals, String denomination_name, String address_url, String tx_url, int crypto_decimals, int display_decimals, int conf_target, Long denomination_factor) {
+    public void setExRate(double exrate) {
+        DecimalFormat df = new DecimalFormat(USD_DECIMALS);
+        this.exRate=exrate;
+        this.exRate = Double.parseDouble(df.format(this.exRate));
+    }
+    public void setTxFee(double txfee) {
+        this.txFee=txfee;
+        if (this.CRYPTO_TICKER.equalsIgnoreCase("DOGE")){this.txFee=txfee * 0.1;}
+        this.txFee = Double.parseDouble(GlobalDecimalFormat.format(this.txFee));
+    }
+    public void config(String coingecko_crypto, String crypto_ticker, String p_flag, String usd_decimals, String denomination_name, String address_url, String tx_url, int crypto_decimals, int display_decimals, int conf_target, Long denomination_factor) {
         this.COINGECKO_CRYPTO=coingecko_crypto;
         this.CRYPTO_TICKER=crypto_ticker;
+        this.P_FLAG=p_flag;
         this.USD_DECIMALS=usd_decimals;
         this.DENOMINATION_NAME=denomination_name;
         this.ADDRESS_URL=address_url;

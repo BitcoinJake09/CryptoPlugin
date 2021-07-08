@@ -29,7 +29,7 @@ public class NodeWallet {
        this.address = getNewAccountAddress();
        }
       else {this.address = getAccountAddress();}
-      System.out.println("address loaded: " + this.address);
+      //System.out.println("address loaded: " + this.address);
     } catch (Exception e) {
       e.printStackTrace();
       //System.out.println("[address] error.");
@@ -43,7 +43,7 @@ public class NodeWallet {
       JSONArray params = new JSONArray();
       jsonObject.put("jsonrpc", "1.0");
       jsonObject.put("id", "cryptoplugin");
-      if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+      if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
 	jsonObject.put("method", "getaddressesbylabels");
       } else {
       jsonObject.put("method", "getaddressesbyaccount");
@@ -65,7 +65,7 @@ public class NodeWallet {
       OutputStreamWriter out = new OutputStreamWriter(con.getOutputStream());
       out.write(jsonObject.toString());
       out.close();
-            if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+            if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
     int responseCode = con.getResponseCode();
     BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
     String inputLine;
@@ -78,7 +78,10 @@ public class NodeWallet {
     JSONObject response_object = (JSONObject) parser.parse(response.toString());
     String tempAddy = response_object.get("result").toString();
     JSONObject fnodesObj = (JSONObject) response_object.get("result");
-    String tempaddy = (String) fnodesObj.get(this.account_id); 
+    String tempaddy = (String) fnodesObj.get(this.account_id);
+    if (tempaddy == null) {
+    tempaddy = "[]";
+    }
     return tempaddy;
 
 
@@ -157,7 +160,7 @@ public class NodeWallet {
       jsonObject.put("id", "cryptoplugin");
 
       JSONArray params = new JSONArray();
-            if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+            if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
                   jsonObject.put("method", "getbalance");
             params.add(account_id);
       } else {
@@ -246,7 +249,7 @@ public double getFee()
       jsonObject.put("id", "cryptoplugin");
       jsonObject.put("method", "estimatefee");
       JSONArray params = new JSONArray();
-            if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
+            if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
             //params.add(account_id);
       } else {
       params.add(CryptoPlugin.NODES.get(this.walletArray).CONFS_TARGET);
@@ -482,7 +485,7 @@ public double getFee()
     JSONArray FinalUTXOarray = new JSONArray();
     double totalBalance = 0.0;
     for(int i=0;i<jsonArray.size();i++){
-    if (totalBalance < (stopSat + this.getFee())) {
+    if (totalBalance < (stopSat + CryptoPlugin.NODES.get(this.walletArray).txFee)) {
     JSONObject tempObject = new JSONObject();
     tempObject.put("txid" , tempTXID[i]);
     tempObject.put("vout" , tempVout[i]);
@@ -509,11 +512,7 @@ public double getFee()
         satsRequested = satsRequested + decimalSat.doubleValue();
     }
     double changeRequest = totalBalance - satsRequested;
-    if (CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO.equalsIgnoreCase("DeVault")) {
-    changeRequest = changeRequest - (getFee());
-      } else {
-    changeRequest = changeRequest - (getFee() * (0.226));
-      }
+    changeRequest = changeRequest - (CryptoPlugin.NODES.get(this.walletArray).txFee);
     BigDecimal changeSat = new BigDecimal(changeRequest);
         changeSat = changeSat.setScale(CryptoPlugin.NODES.get(this.walletArray).CRYPTO_DECIMALS, BigDecimal.ROUND_DOWN);
     addresses.put(this.address, changeSat);
@@ -548,9 +547,9 @@ public double getFee()
       in.close();
 
       JSONObject response_object = (JSONObject) parser.parse(response.toString());
-      //System.out.println("unsigned: " + (String) response_object.get("result"));
+      System.out.println("unsigned: " + (String) response_object.get("result"));
       String signed = signrawtransaction((String) response_object.get("result"), tempTXID, tempVout);
-      //System.out.println("signed: " + signed);
+      System.out.println("signed: " + signed);
       String sent = sendrawtransaction(signed);
       return sent;
 

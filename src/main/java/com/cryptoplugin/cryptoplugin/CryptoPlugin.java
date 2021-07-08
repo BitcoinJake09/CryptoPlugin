@@ -34,6 +34,7 @@ public class CryptoPlugin extends JavaPlugin {
   boolean loadENVnode = true;
   public boolean eventsLoaded = false;
   public boolean maintenance_mode = false;
+  public boolean nodesLoaded = false;
   
   public static final String CRYPTOPLUGIN_ENV =
       System.getenv("CRYPTOPLUGIN_ENV") != null ? System.getenv("CRYPTOPLUGIN_ENV") : "development";
@@ -85,7 +86,9 @@ public class CryptoPlugin extends JavaPlugin {
         System.out.println("[startup] checking " + NODES.get(x).CRYPTO_TICKER + " node connection");
           System.out.println("baseSat: "+ NODES.get(x).GlobalDecimalFormat.format(NODES.get(x).BaseSat));
         nodeWallet = new NodeWallet("CryptoPlugin", x);
+        NODES.get(x).setTxFee(nodeWallet.getFee());
         nodeWallet.getBlockChainInfo();
+              nodesLoaded = true;
         }
       }
 
@@ -93,6 +96,7 @@ public class CryptoPlugin extends JavaPlugin {
       createScheduledTimers();
       commands = new HashMap<String, CommandAction>();
       commands.put("wallet", new WalletCommand(this));
+      commands.put("wallets", new WalletsCommand(this));
       commands.put("tip", new TipCommand(this));
       commands.put("withdraw", new WithdrawCommand(this));
       modCommands = new HashMap<String, CommandAction>();
@@ -134,10 +138,15 @@ for (int i = 0; i < nodeList.length; i++) {
             Object obj = jsonParser.parse(reader);
  
             JSONArray nodeData = (JSONArray) obj;
-            //System.out.println(nodeData);
+            //System.out.println("nodeData: " + nodeData);
+
             final String tempName = nodeList[n].getName().substring(0, nodeList[n].getName().lastIndexOf('.'));
             final int whichNode = n;
-            nodeData.forEach( fnodes -> parseJSONnodes( (JSONObject) fnodes, tempName, whichNode ) );
+            	    //System.out.println("nodeData.get(#): " + nodeData.get(n));
+	    //System.out.println("nodeData.get($): " + nodeData.get(tempName));
+	    nodeData.forEach( fnodes -> parseJSONnodes( (JSONObject) fnodes, tempName, whichNode ) );
+	            //parseJSONnodes( (JSONObject) nodeData.get(n), tempName, n );
+
             }
             }
             return true;
@@ -157,7 +166,7 @@ for (int i = 0; i < nodeList.length; i++) {
   }
   private static void parseJSONnodes(JSONObject fnodes, String fileName, int nodeCount) {
   	NODES.add(new Node());
-  	//NODES.set(0, new Node());
+	     //System.out.println("nodetest :" + nodeCount);
 	JSONObject fnodesObj = (JSONObject) fnodes.get(fileName);
           String tempNode_host = (String) fnodesObj.get("NODE_HOST") != null ? fnodesObj.get("NODE_HOST").toString() : NODES.get(nodeCount).NODE_HOST;    
           String tempNode_port1 = (String) fnodesObj.get("NODE_PORT") != null ? fnodesObj.get("NODE_PORT").toString() : String.valueOf(NODES.get(nodeCount).NODE_PORT);            
@@ -169,6 +178,7 @@ for (int i = 0; i < nodeList.length; i++) {
 
 	String tempCoingecko_crypto = (String) fnodesObj.get("COINGECKO_CRYPTO") != null ? fnodesObj.get("COINGECKO_CRYPTO").toString() : NODES.get(nodeCount).COINGECKO_CRYPTO;    
 	String tempCrypto_ticker = (String) fnodesObj.get("CRYPTO_TICKER") != null ? fnodesObj.get("CRYPTO_TICKER").toString() : NODES.get(nodeCount).CRYPTO_TICKER;  
+	String tempP_Flag = (String) fnodesObj.get("P_FLAG") != null ? fnodesObj.get("P_FLAG").toString() : NODES.get(nodeCount).P_FLAG;  
 	String tempUSD_decimals = (String) fnodesObj.get("USD_DECIMALS") != null ? fnodesObj.get("USD_DECIMALS").toString() : NODES.get(nodeCount).USD_DECIMALS;  
 	String tempDenomination_name = (String) fnodesObj.get("DENOMINATION_NAME") != null ? fnodesObj.get("DENOMINATION_NAME").toString() : NODES.get(nodeCount).DENOMINATION_NAME; 
 	String tempAddress_url = (String) fnodesObj.get("ADDRESS_URL") != null ? fnodesObj.get("ADDRESS_URL").toString() : NODES.get(nodeCount).ADDRESS_URL;   
@@ -181,8 +191,8 @@ for (int i = 0; i < nodeList.length; i++) {
 	Integer tempConfs_taget = Integer.parseInt(tempConfs_taget1);
 		          String tempDenomination_factor1 = (String) fnodesObj.get("DENOMINATION_FACTOR") != null ? fnodesObj.get("DENOMINATION_FACTOR").toString() : String.valueOf(NODES.get(nodeCount).DENOMINATION_FACTOR);  
 	long tempDenomination_factor = Long.valueOf(tempDenomination_factor1);  
-        NODES.get(nodeCount).config(tempCoingecko_crypto, tempCrypto_ticker, tempUSD_decimals, tempDenomination_name, tempAddress_url, tempTX_url, tempCrypto_decimals, tempDisplay_decimals, tempConfs_taget, tempDenomination_factor);
-  
+        NODES.get(nodeCount).config(tempCoingecko_crypto, tempCrypto_ticker, tempP_Flag, tempUSD_decimals, tempDenomination_name, tempAddress_url, tempTX_url, tempCrypto_decimals, tempDisplay_decimals, tempConfs_taget, tempDenomination_factor);
+	NODES.get(nodeCount).setExRate(Double.parseDouble(getExchangeRate(NODES.get(nodeCount).COINGECKO_CRYPTO)));
   }
   public boolean loadENVnode() {
     if (!useJSONnodes) {
@@ -202,6 +212,8 @@ for (int i = 0; i < nodeList.length; i++) {
       System.getenv("COINGECKO_CRYPTO") != null ? System.getenv("COINGECKO_CRYPTO") : NODES.get(0).COINGECKO_CRYPTO;
   String tempCrypto_ticker =
       System.getenv("CRYPTO_TICKER") != null ? System.getenv("CRYPTO_TICKER") : NODES.get(0).CRYPTO_TICKER;
+  String tempP_Flag =
+      System.getenv("P_FLAG") != null ? System.getenv("P_FLAG") : NODES.get(0).P_FLAG;
   Long tempDenomination_factor =
       System.getenv("DENOMINATION_FACTOR") != null
           ? Long.parseLong(System.getenv("DENOMINATION_FACTOR"))
@@ -230,8 +242,8 @@ for (int i = 0; i < nodeList.length; i++) {
           ? System.getenv("TX_URL")
           : NODES.get(0).TX_URL;
           
-          NODES.get(0).config(tempCoingecko_crypto, tempCrypto_ticker, tempUSD_decimals, tempDenomination_name, tempAddress_url, tempTX_url, tempCrypto_decimals, tempDisplay_decimals, tempConfs_taget, tempDenomination_factor);
-          
+          NODES.get(0).config(tempCoingecko_crypto, tempCrypto_ticker, tempP_Flag, tempUSD_decimals, tempDenomination_name, tempAddress_url, tempTX_url, tempCrypto_decimals, tempDisplay_decimals, tempConfs_taget, tempDenomination_factor);
+	NODES.get(0).setExRate(Double.parseDouble(getExchangeRate(NODES.get(0).COINGECKO_CRYPTO)));
           return true;
     }
               return false;
@@ -249,16 +261,32 @@ for (int i = 0; i < nodeList.length; i++) {
         this,
         new Runnable() {
           @Override
-          public void run() {}
+          public void run() {
+          try {
+          if (nodesLoaded == true){
+		for (int x = 0; x < NODES.size(); x++) {
+		        nodeWallet = new NodeWallet("CryptoPlugin", x);
+		 	NODES.get(x).setExRate(Double.parseDouble(getExchangeRate(NODES.get(x).COINGECKO_CRYPTO)));
+		 	         System.out.println("[CryptoPlugin][exRate]["+NODES.get(x).COINGECKO_CRYPTO+"]: "+NODES.get(x).exRate);
+                       NODES.get(x).setTxFee(nodeWallet.getFee());
+		 	         System.out.println("[CryptoPlugin][txFee]["+NODES.get(x).COINGECKO_CRYPTO+"]: "+NODES.get(x).txFee);
+		}
+          }
+              } catch (Exception e) {
+      e.printStackTrace();
+    }
+          }
         },
         0,
-        7200L);
+        18000L);
   }
 
   public void publish_stats() {
     try {
-      nodeWallet = new NodeWallet("CryptoPlugin", 0);
+          	for (int x = 0; x < NODES.size(); x++) {
+      nodeWallet = new NodeWallet("CryptoPlugin", x);
       nodeWallet.getBlockChainInfo();
+      }
       // Long balance = getBalance(SERVERDISPLAY_NAME,1); //error here
       // REDIS.set("loot:pool", Long.toString(balance));
       if (System.getenv("ELASTICSEARCH_ENDPOINT") != null) {
@@ -353,9 +381,9 @@ for (int i = 0; i < nodeList.length; i++) {
     this.setEnabled(false);
   }
 
-  public String getExchangeRate(String crypto) {
-    String price = exRate.toString();
-    String rate = exRate.toString();
+  public static String getExchangeRate(String crypto) {
+    String price = "0.00";
+    //String rate = exRate.toString();
     try {
 
       URL url =
@@ -413,7 +441,7 @@ for (int i = 0; i < nodeList.length; i++) {
     if (isStringDouble(price)) {
       return price;
     } else {
-      return rate;
+      return price;
     }
   }
 
