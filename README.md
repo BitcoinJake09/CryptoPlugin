@@ -40,6 +40,7 @@ doge.json:
 "NODE_PASSWORD":"xxxxxxxxxxxxxxxx",
 "COINGECKO_CRYPTO":"dogecoin",
 "CRYPTO_TICKER":"DOGE",
+"P_FLAG":"DOGE",
 "USD_DECIMALS":"0.0000",
 "DENOMINATION_NAME":"shibes",
 "ADDRESS_URL":"https://blockchair.com/dogecoin/address/",
