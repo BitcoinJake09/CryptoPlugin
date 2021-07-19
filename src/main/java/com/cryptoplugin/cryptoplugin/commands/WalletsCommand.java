@@ -55,7 +55,7 @@ public class WalletsCommand extends CommandAction {
       player.sendMessage(
           ChatColor.GREEN
               + CryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO
-              + " fee Estimates: " + ChatColor.WHITE + ""  + CryptoPlugin.NODES.get(nodeWallet.walletArray).txFee);
+              + " fee Estimates: " + ChatColor.WHITE + ""  + CryptoPlugin.NODES.get(nodeWallet.walletArray).GlobalDecimalFormat.format(CryptoPlugin.NODES.get(nodeWallet.walletArray).txFee));
 
       player.sendMessage(
           ChatColor.AQUA

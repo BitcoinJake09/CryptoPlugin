@@ -34,7 +34,7 @@ public class WalletCommand extends CommandAction {
 	      player.sendMessage(ChatColor.GOLD + "/wallets - Displays ALL wallets infos.");
       player.sendMessage(
           ChatColor.GOLD
-              + "/wallets change < # || TICKER > - used to change the players active wallet.");
+              + "/wallets change < # or TICKER > - used to change the players active wallet.");
       player.sendMessage(ChatColor.GREEN + "Your "+cryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO+" address on this server: ");
       player.sendMessage(ChatColor.GOLD + "" + address);
       String url = cryptoPlugin.NODES.get(cryptoPlugin.whichWallet.get(player.getUniqueId())).ADDRESS_URL + address;
@@ -64,7 +64,7 @@ public class WalletCommand extends CommandAction {
       player.sendMessage(
           ChatColor.GREEN
               + CryptoPlugin.NODES.get(nodeWallet.walletArray).COINGECKO_CRYPTO
-              + " fee Estimates: " + ChatColor.WHITE + ""  + CryptoPlugin.NODES.get(nodeWallet.walletArray).txFee);
+              + " fee Estimates: " + ChatColor.WHITE + ""  + CryptoPlugin.NODES.get(nodeWallet.walletArray).GlobalDecimalFormat.format(CryptoPlugin.NODES.get(nodeWallet.walletArray).txFee));
 
     } catch (Exception e) {
       e.printStackTrace();

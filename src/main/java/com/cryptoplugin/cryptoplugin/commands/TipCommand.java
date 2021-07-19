@@ -124,7 +124,7 @@ public class TipCommand extends CommandAction {
                       
                       System.out.println(player.getName()
                       + " tipped you "
-                      + tmpSat
+                      + CryptoPlugin.NODES.get(nodeWallet.walletArray).GlobalDecimalFormat.format(tmpSat)
                       + " "
                       + CryptoPlugin.NODES.get(nodeWallet.walletArray).CRYPTO_TICKER
                       + "Your tip tx: "
