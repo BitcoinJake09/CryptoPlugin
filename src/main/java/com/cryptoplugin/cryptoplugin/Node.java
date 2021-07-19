@@ -81,7 +81,7 @@ public class Node {
     for (int y = 1; y <= this.CRYPTO_DECIMALS; y++) {
       DCF = DCF + "0";
     }
-    System.out.println(DCF);
+    //System.out.println(DCF);
     DecimalFormat numberFormat = new DecimalFormat(DCF);
     this.GlobalDecimalFormat = numberFormat;
     Double oneSats = 1.0;

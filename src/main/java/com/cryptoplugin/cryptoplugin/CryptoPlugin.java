@@ -99,6 +99,7 @@ public class CryptoPlugin extends JavaPlugin {
       commands.put("wallets", new WalletsCommand(this));
       commands.put("tip", new TipCommand(this));
       commands.put("withdraw", new WithdrawCommand(this));
+      commands.put("Backupkey", new BackupkeyCommand(this));
       modCommands = new HashMap<String, CommandAction>();
       modCommands.put("crashTest", new CrashtestCommand(this));
       modCommands.put("emergencystop", new EmergencystopCommand());
@@ -125,7 +126,7 @@ File[] nodeList = nodeDir.listFiles();
 
 for (int i = 0; i < nodeList.length; i++) {
   if (nodeList[i].isFile()) {
-    System.out.println("File " + nodeList[i].getName());
+    System.out.println("File Found " + nodeList[i].getName());
   } else if (nodeList[i].isDirectory()) {
     System.out.println("Directory " + nodeList[i].getName());
   }
@@ -269,7 +270,8 @@ for (int i = 0; i < nodeList.length; i++) {
 		 	NODES.get(x).setExRate(Double.parseDouble(getExchangeRate(NODES.get(x).COINGECKO_CRYPTO)));
 		 	         System.out.println("[CryptoPlugin][exRate]["+NODES.get(x).COINGECKO_CRYPTO+"]: "+NODES.get(x).exRate);
                        NODES.get(x).setTxFee(nodeWallet.getFee());
-		 	         System.out.println("[CryptoPlugin][txFee]["+NODES.get(x).COINGECKO_CRYPTO+"]: "+NODES.get(x).txFee);
+		 	         System.out.println("[CryptoPlugin][txFee]["+NODES.get(x).COINGECKO_CRYPTO+"]: "+NODES.get(x).GlobalDecimalFormat.format(NODES.get(x).txFee));
+		 	         
 		}
           }
               } catch (Exception e) {

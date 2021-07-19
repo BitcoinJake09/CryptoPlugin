@@ -29,7 +29,7 @@ public class NodeWallet {
        this.address = getNewAccountAddress();
        }
       else {this.address = getAccountAddress();}
-      //System.out.println("address loaded: " + this.address);
+      System.out.println(CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO + " address loaded: " + this.address);
     } catch (Exception e) {
       e.printStackTrace();
       //System.out.println("[address] error.");
@@ -45,6 +45,9 @@ public class NodeWallet {
       jsonObject.put("id", "cryptoplugin");
       if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
 	jsonObject.put("method", "getaddressesbylabels");
+      } else if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC"))) {
+	jsonObject.put("method", "getaddressesbylabel");
+	            params.add(account_id);
       } else {
       jsonObject.put("method", "getaddressesbyaccount");
             params.add(account_id);
@@ -65,8 +68,51 @@ public class NodeWallet {
       OutputStreamWriter out = new OutputStreamWriter(con.getOutputStream());
       out.write(jsonObject.toString());
       out.close();
-            if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
+            if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DOGE")) {     
     int responseCode = con.getResponseCode();
+    BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+    String inputLine;
+    StringBuffer response = new StringBuffer();
+    while ((inputLine = in.readLine()) != null) {
+      response.append(inputLine);
+    }
+    in.close();
+    parser = new JSONParser();
+    JSONObject response_object = (JSONObject) parser.parse(response.toString());
+    //JSONArray array = ( (JSONArray) new JSONParser().parse(response_object.get("result").toString()));
+	//System.out.println("addy test: "+array.get(0).toString());
+          if (!(response_object.get("result").toString().equals("[]"))) {
+	String subStr = response_object.get("result").toString().substring(response_object.get("result").toString().indexOf("[") + 1,response_object.get("result").toString().indexOf("]"));
+      String finalString = subStr.substring(subStr.indexOf("\"") + 1, subStr.lastIndexOf("\""));
+            return finalString; // just give them an empty object
+          }
+            return response_object.get("result").toString(); // just give them an empty object
+
+      } else if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC"))) {
+          int responseCode = con.getResponseCode();
+    BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+    String inputLine;
+    StringBuffer response = new StringBuffer();
+    while ((inputLine = in.readLine()) != null) {
+      response.append(inputLine);
+    }
+    in.close();
+    parser = new JSONParser();
+    JSONObject response_object = (JSONObject) parser.parse(response.toString());
+
+    JSONObject fnodesObj = (JSONObject) response_object.get("result");
+    String subStr = fnodesObj.toString().substring(fnodesObj.toString().indexOf("\"") + 1,fnodesObj.toString().indexOf("\"")+43);
+    if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC")) {
+    subStr = fnodesObj.toString().substring(fnodesObj.toString().indexOf("\"") + 1,fnodesObj.toString().indexOf("\"")+35);
+    } 
+    String tempaddy = subStr;
+    if (tempaddy == null) {
+    tempaddy = "[]";
+    }
+    return tempaddy;
+
+      } else {
+          int responseCode = con.getResponseCode();
     BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
     String inputLine;
     StringBuffer response = new StringBuffer();
@@ -84,29 +130,11 @@ public class NodeWallet {
     }
     return tempaddy;
 
-
-      } else {
-    int responseCode = con.getResponseCode();
-    BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-    String inputLine;
-    StringBuffer response = new StringBuffer();
-    while ((inputLine = in.readLine()) != null) {
-      response.append(inputLine);
-    }
-    in.close();
-    parser = new JSONParser();
-    JSONObject response_object = (JSONObject) parser.parse(response.toString());
-          if (!(response_object.get("result").toString().equals("[]"))) {
-	String subStr = response_object.get("result").toString().substring(response_object.get("result").toString().indexOf("[") + 1,response_object.get("result").toString().indexOf("]"));
-      String finalString = subStr.substring(subStr.indexOf("\"") + 1, subStr.lastIndexOf("\""));
-            return finalString; // just give them an empty object
-          }
-            return response_object.get("result").toString(); // just give them an empty object
       }
     } catch (IOException e) {
-      System.out.println("address not found for: " + account_id);
+      System.out.println(CryptoPlugin.NODES.get(this.walletArray).COINGECKO_CRYPTO + "address not found for: " + account_id);
       System.out.println("will attempt to create address.");
-      // System.out.println(e);
+       //e.printStackTrace();
       // Unable to call API?
       return "[]";
     }
@@ -213,10 +241,11 @@ public class NodeWallet {
       final JSONObject UTXOs = this.listunspent();
       //System.out.println("listunspent?: "+ UTXOs.toString());
       //System.out.println("UTXOs.toString().get(result)?: "+ UTXOs.get("result").toString());
+      double finalAmount = 0.0;
+	if (UTXOs.get("result").toString() != null && !UTXOs.get("result").toString().isEmpty()){
       JSONArray jsonArray = (JSONArray) parser.parse(UTXOs.get("result").toString());
       //System.out.println("jsonArray.toString()?: "+ jsonArray.toString());
       double[] tempAmount = new double[jsonArray.size()];
-      double finalAmount = 0.0;
       String[] tempTXID = new String[jsonArray.size()];
       int[] tempVout = new int[jsonArray.size()];
       for(int i=0;i<jsonArray.size();i++){
@@ -230,11 +259,14 @@ public class NodeWallet {
         tempTXID[i] = json.get("txid").toString();
         tempVout[i] = Integer.parseInt(json.get("vout").toString());
       }
+     }
     //System.out.println("UTXO balance: "+ finalAmount);
+    if ((finalAmount == Double.NaN)||(Double.toString(finalAmount) == "")){ finalAmount=0.0;}
     return finalAmount;
     
         } catch (Exception e) {
-      e.printStackTrace();
+	//System.out.println("no UTXOs found");
+      //e.printStackTrace();
     }
     return 0.0;
   }
@@ -247,7 +279,11 @@ public double getFee()
       final JSONObject jsonObject = new JSONObject();
       jsonObject.put("jsonrpc", "1.0");
       jsonObject.put("id", "cryptoplugin");
+      if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC"))) {
+      jsonObject.put("method", "estimatesmartfee");
+      } else {
       jsonObject.put("method", "estimatefee");
+      }
       JSONArray params = new JSONArray();
             if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
             //params.add(account_id);
@@ -283,7 +319,13 @@ public double getFee()
       parser = new JSONParser();
       JSONObject response_object = (JSONObject) parser.parse(response.toString());
       //System.out.println(response_object);
-      Double fee = Double.parseDouble(response_object.get("result").toString());// * 100000000L;
+      Double fee = 0.00;
+      if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC"))) {
+            JSONObject resultJSON = (JSONObject) response_object.get("result");
+        fee = Double.parseDouble(resultJSON.get("feerate").toString());
+      } else {
+	fee = Double.parseDouble(response_object.get("result").toString());// * 100000000L;
+      }
       //final double fee = d.longValue();
       //setFee(fee);
       return fee;
@@ -291,7 +333,7 @@ public double getFee()
     } catch (Exception e) {
       e.printStackTrace();
     }
-    return 0L;
+    return 0.0;
   }
 
   // @todo: make this just accept the endpoint name and (optional) parameters
@@ -360,7 +402,7 @@ public double getFee()
       params.add(addys);
       params.add(true);
       final JSONObject amt = new JSONObject();
-        amt.put("minimumAmount", 0.01);
+        amt.put("minimumAmount", CryptoPlugin.NODES.get(this.walletArray).BaseSat);
       params.add(amt);
       jsonObject.put("params", params);
       // System.out.println("Checking blockchain info...");
@@ -566,9 +608,17 @@ public double getFee()
     final JSONObject jsonObject = new JSONObject();
     jsonObject.put("jsonrpc", "1.0");
     jsonObject.put("id", "cryptoplugin");
-    jsonObject.put("method", "signrawtransaction");
     JSONArray params = new JSONArray();
     params.add(unsigned);
+    if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC"))) {
+    jsonObject.put("method", "signrawtransactionwithkey");
+      JSONArray keyParams = new JSONArray();
+      keyParams.add(this.dumpprivkey());
+      params.add(keyParams);
+    } else {
+        jsonObject.put("method", "signrawtransaction");
+    }
+
 /*    JSONArray FinalUTXOarray = new JSONArray();
     for(int i=0;i<tempTXID.length;i++){
     JSONObject tempObject = new JSONObject();
