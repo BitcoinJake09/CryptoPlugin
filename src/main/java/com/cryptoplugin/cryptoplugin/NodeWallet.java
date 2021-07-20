@@ -45,7 +45,7 @@ public class NodeWallet {
       jsonObject.put("id", "cryptoplugin");
       if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
 	jsonObject.put("method", "getaddressesbylabels");
-      } else if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC"))) {
+      } else if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BCH"))) {
 	jsonObject.put("method", "getaddressesbylabel");
 	            params.add(account_id);
       } else {
@@ -105,6 +105,9 @@ public class NodeWallet {
     if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC")) {
     subStr = fnodesObj.toString().substring(fnodesObj.toString().indexOf("\"") + 1,fnodesObj.toString().indexOf("\"")+35);
     } 
+    if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BCH")) {
+      subStr = fnodesObj.toString().substring(fnodesObj.toString().indexOf("\"") + 1,fnodesObj.toString().indexOf("\"")+55);
+    }
     String tempaddy = subStr;
     if (tempaddy == null) {
     tempaddy = "[]";
@@ -191,6 +194,10 @@ public class NodeWallet {
             if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("DVT")) {
                   jsonObject.put("method", "getbalance");
             params.add(account_id);
+      } else if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BCH")) {
+        jsonObject.put("method", "getreceivedbyaddress");
+      params.add(this.address);
+      params.add("0");
       } else {
             jsonObject.put("method", "getreceivedbyaddress");
       params.add(this.address);
@@ -395,7 +402,11 @@ public double getFee()
       jsonObject.put("id", "CryptoPlugin");
       jsonObject.put("method", "listunspent");
       JSONArray params = new JSONArray();
+      if (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BCH")) {
+      params.add(0);
+      } else {
       params.add(6);
+      }
       params.add(9999999);
       JSONArray addys = new JSONArray();
         addys.add(this.address);
@@ -610,7 +621,7 @@ public double getFee()
     jsonObject.put("id", "cryptoplugin");
     JSONArray params = new JSONArray();
     params.add(unsigned);
-    if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC"))) {
+    if ((CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("LTC")) || (CryptoPlugin.NODES.get(this.walletArray).P_FLAG.equalsIgnoreCase("BCH"))) {
     jsonObject.put("method", "signrawtransactionwithkey");
       JSONArray keyParams = new JSONArray();
       keyParams.add(this.dumpprivkey());
